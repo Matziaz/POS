@@ -1,0 +1,11 @@
+# Archivos temporales
+*.log
+*.tmp
+
+# Entornos
+.env
+
+# Builds
+build/
+dist/
+
