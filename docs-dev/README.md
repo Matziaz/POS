@@ -1,0 +1,41 @@
+# Documentacion Para Desarrolladores
+
+Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyecto.
+
+## Documentos Disponibles
+
+1. **[GLOSSARY.md](./guides/GLOSSARY.md)** (15 min) — Si es tu primer proyecto web
+   - Que es un framework, Node.js, npm, Git
+   - Conceptos tecnicos explicados en lenguaje simple
+   - Mensajes de error comunes y que significan
+
+2. **[QUICKSTART.md](./guides/QUICKSTART.md)** (90 min) — Setup y arquitectura
+   - Setup paso a paso
+   - Como entender la arquitectura del proyecto
+   - Primeras tareas recomendadas
+   - Troubleshooting
+
+3. **[DEVELOPMENT.md](./guides/DEVELOPMENT.md)** (30 min) — Consulta permanente
+   - Convenciones de codigo
+   - Estructura detallada del proyecto
+   - Comandos utiles
+   - Problemas comunes y como resolverlos
+
+## Por Donde Empezar
+
+**Paso 1 — Solo si nunca trabajaste con desarrollo web:**
+Lee [GLOSSARY.md](./guides/GLOSSARY.md) antes de cualquier otra cosa (15 min).
+
+**Paso 2 — Todos, el primer dia:**
+Lee [QUICKSTART.md](./guides/QUICKSTART.md). Cubre el setup completo, la arquitectura y el troubleshooting (90 min).
+
+**Paso 3 — Durante el proyecto:**
+Consulta [DEVELOPMENT.md](./guides/DEVELOPMENT.md) cuando necesites recordar convenciones o comandos.
+
+## Referencias Rapidas
+
+| Si necesitas... | Ve a |
+|---|---|
+| Entender que construimos | [../docs/vision.md](../docs/vision.md) |
+| Saber por que estas tecnologias | [../docs/decisiones-arquitectura.md](../docs/decisiones-arquitectura.md) |
+| Ver el plan de desarrollo | [../docs/roadmap.md](../docs/roadmap.md) |
