@@ -5,6 +5,5 @@
  * Las implementaciones están en infrastructure/persistence
  */
 
-// Placeholder: IProductRepository interface
-// Placeholder: ISaleRepository interface
-// Placeholder: IConfigRepository interface
+export * from "./ProductRepository";
+export * from "./SaleRepository";

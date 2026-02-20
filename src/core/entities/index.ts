@@ -5,6 +5,5 @@
  * Cada entidad es responsable de su propia validación.
  */
 
-// Placeholder: Product entity
-// Placeholder: Sale/Transaction entity
-// Placeholder: Configuration entity
+export * from "./Product";
+export * from "./Sale";
