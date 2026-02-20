@@ -4,6 +4,6 @@
  * Errores específicos del dominio para mejor manejo.
  */
 
-// Placeholder: InvalidProductError
-// Placeholder: InsufficientStockError
-// Placeholder: InvalidSaleError
+export * from "./DomainError";
+export * from "./ValidationError";
+export * from "./NotFoundError";
