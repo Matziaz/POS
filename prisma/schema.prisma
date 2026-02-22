@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model inventory_movement {
+  id         String  @id
+  product_id String
+  type       String
+  quantity   Int
+  created_at String  @default("CURRENT_TIMESTAMP")
+  product    product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product {
+  id                 String               @id
+  name               String
+  sku                String               @unique(map: "sqlite_autoindex_product_2")
+  price              Float
+  stock              Int                  @default(0)
+  provider_id        String
+  created_at         String               @default("CURRENT_TIMESTAMP")
+  inventory_movement inventory_movement[]
+  provider           provider             @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale_item          sale_item[]
+}
+
+model provider {
+  id        String    @id
+  name      String    @unique(map: "sqlite_autoindex_provider_2")
+  telephone String?
+  email     String?
+  product   product[]
+}
+
+model role {
+  id   String @id
+  type String @unique(map: "sqlite_autoindex_role_2")
+  user user[]
+}
+
+model sale {
+  id         String      @id
+  user_id    String
+  total      Float
+  created_at String      @default("CURRENT_TIMESTAMP")
+  user       user        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale_item  sale_item[]
+}
+
+model sale_item {
+  id         String  @id
+  sale_id    String
+  product_id String
+  quantity   Int
+  price      Float
+  product    product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale       sale    @relation(fields: [sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id         String @id
+  username   String @unique(map: "sqlite_autoindex_user_2")
+  password   String
+  role_id    String
+  created_at String @default("CURRENT_TIMESTAMP")
+  sale       sale[]
+  role       role   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
