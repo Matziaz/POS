@@ -4,31 +4,49 @@ export interface ProductProps {
   id: ProductId;
   sku: string;
   name: string;
-  priceCents: number; // evitar floats
-  createdAt: Date;
+  price: number; //DB Float
+  stock: number; //DB Int default 
+  providerId: string; //DB provider_id
+  createdAt: string; //DB created_at String
 }
 
 export class Product {
   private constructor(private readonly props: ProductProps) {}
 
-  static create(input: Omit<ProductProps, "createdAt"> & { createdAt?: Date }): Product {
-    const createdAt = input.createdAt ?? new Date();
+  static create(input: Omit<ProductProps, "createdAt" | "stock"> & { createdAt?: string; stock?: number }): Product {
+    const createdAt = input.createdAt ?? new Date().toISOString();
+    const stock = input.stock ?? 0;
 
     if (!input.id?.trim()) throw new Error("Product.id is required");
     if (!input.sku?.trim()) throw new Error("Product.sku is required");
     if (!input.name?.trim()) throw new Error("Product.name is required");
-    if (!Number.isInteger(input.priceCents) || input.priceCents <= 0) {
-      throw new Error("Product.priceCents must be a positive integer");
+    if (!input.providerId?.trim()) throw new Error("Product.providerId is required");
+
+    if(typeof input.price !== "number" || !Number.isFinite(input.price) || input.price <= 0) {
+      throw new Error("Product.price must be a positive number");
     }
 
-    return new Product({ ...input, createdAt });
+    if(!Number.isInteger(stock) || stock < 0) {
+      throw new Error("Product.stock must be a non-negative integer");
+    }
+
+    return new Product({ ...input, stock, createdAt });
   }
 
   get id() { return this.props.id; }
   get sku() { return this.props.sku; }
   get name() { return this.props.name; }
-  get priceCents() { return this.props.priceCents; }
+  get price() { return this.props.price; }
+  get stock() { return this.props.stock; }
+  get providerId() { return this.props.providerId; }
   get createdAt() { return this.props.createdAt; }
+
+  withStock(newStock: number): Product {
+    if(!Number.isInteger(newStock) || newStock < 0) {
+      throw new Error("Product.stock must be a non-negative integer");
+    }
+    return new Product({ ...this.props, stock: newStock });
+  }
 
   toJSON(): ProductProps {
     return { ...this.props };
