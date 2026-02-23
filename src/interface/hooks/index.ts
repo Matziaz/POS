@@ -4,7 +4,5 @@
  * Lógica reutilizable de React.
  */
 
-// Placeholder: useSales
-// Placeholder: useProducts
-// Placeholder: useConfig
-// Placeholder: useCashierClosing
+export { useProducts } from './useProducts'
+export type { UseProductsReturn } from './useProducts'
