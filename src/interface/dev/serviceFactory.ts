@@ -5,12 +5,20 @@
  * TODO: Reemplazar con inyección de dependencias real cuando infrastructure/ esté listo.
  */
 
-import { ProductService } from "@core/services"
+import { ProductService, SaleService } from "@core/services"
 import { InMemoryProductRepository } from "./InMemoryProductRepository"
+import { InMemorySaleRepository } from "./InMemorySaleRepository"
+import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository"
 
-// Singleton: misma instancia compartida en toda la app
+// Singletons: misma instancia compartida en toda la app
 const productRepository = new InMemoryProductRepository()
+const saleRepository = new InMemorySaleRepository()
+const inventoryMovementRepository = new InMemoryInventoryMovementRepository()
+
 const productService = new ProductService(productRepository)
+const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository)
+
+// --- Products ---
 
 export function getProductService(): ProductService {
   return productService
@@ -22,4 +30,14 @@ export function getProductService(): ProductService {
  */
 export function getProductRepository(): InMemoryProductRepository {
   return productRepository
+}
+
+// --- Sales ---
+
+export function getSaleService(): SaleService {
+  return saleService
+}
+
+export function getSaleRepository(): InMemorySaleRepository {
+  return saleRepository
 }

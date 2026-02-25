@@ -1,16 +1,19 @@
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { InventoryPage } from '@interface/pages/InventoryPage'
+import { SalesPage } from '@interface/pages/SalesPage'
+import { AppLayout } from '@interface/components/layout'
 
 export const App: React.FC = () => {
   return (
     <HashRouter>
-      <div className="min-h-screen bg-background">
+      <AppLayout>
         <Routes>
           <Route path="/" element={<Navigate to="/inventario" replace />} />
           <Route path="/inventario" element={<InventoryPage />} />
+          <Route path="/ventas" element={<SalesPage />} />
         </Routes>
-      </div>
+      </AppLayout>
     </HashRouter>
   )
 }

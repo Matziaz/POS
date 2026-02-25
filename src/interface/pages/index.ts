@@ -5,3 +5,4 @@
  */
 
 export { InventoryPage } from './InventoryPage'
+export { SalesPage } from './SalesPage'
