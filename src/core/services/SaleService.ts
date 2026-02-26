@@ -38,7 +38,7 @@ export class SaleService {
         price: p.price,
       });
       //actualizar stock
-      await this.products.save(p.withStock(p.stock - line.qty));
+      await this.products.update(p.withStock(p.stock - line.qty));
       //movimiento de inventario OUT
       const mv = InventoryMovement.create({
         id: newId(),
