@@ -5,5 +5,4 @@
  * Extensión de las reglas de negocio base.
  */
 
-export * from './contextos'
-export * from './rules'
+export * from "./rules";

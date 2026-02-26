@@ -8,3 +8,5 @@
 // Placeholder: StockManagementRule
 // Placeholder: PricingRule
 // Placeholder: CashierClosingRule
+
+export * from "./validation";
