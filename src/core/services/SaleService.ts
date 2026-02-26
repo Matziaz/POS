@@ -3,7 +3,7 @@ import { NotFoundError, ValidationError } from "../errors";
 import type { ProductRepository, SaleRepository} from "../repositories";
 import type { InventoryMovementRepository } from "../repositories/InventoryMovementRepository";
 import { newId } from "./id";
-import { DEFAULT_USER_ID } from "../constants";
+import { DEFAULT_USER_ID } from "../../shared/constants/constants";
 
 export class SaleService {
   constructor(
