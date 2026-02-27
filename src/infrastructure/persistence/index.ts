@@ -8,3 +8,5 @@
 // Placeholder: ProductRepository implementation
 // Placeholder: SaleRepository implementation
 // Placeholder: ConfigRepository implementation
+
+export * from "./SQLiteProductRepository.ts";
