@@ -5,6 +5,7 @@
  * Mantén mínimo, usa custom hooks cuando sea posible.
  */
 
-// Placeholder: SalesStore
-// Placeholder: ProductsStore
-// Placeholder: UIStore (pantalla actual, etc.)
+export { useProductStore } from './productStore'
+export type { CreateProductInput, UpdateProductInput } from './productStore'
+export { useSaleStore } from './salesStore'
+export type { SaleView, SaleItemView, RegisterSaleLineInput } from './salesStore'
