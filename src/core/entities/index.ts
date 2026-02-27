@@ -5,5 +5,10 @@
  * Cada entidad es responsable de su propia validación.
  */
 
+export * from "./InventoryMovement";
 export * from "./Product";
+export * from "./Provider";
+export * from "./Role";
 export * from "./Sale";
+export * from "./SaleItem";
+export * from "./User";

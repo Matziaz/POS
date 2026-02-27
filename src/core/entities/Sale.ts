@@ -1,53 +1,42 @@
-import type { ProductId } from "./Product";
-
+import { SaleItem, type SaleItemProps } from "./SaleItem";
 export type SaleId = string;
-
-export interface SaleItem {
-  productId: ProductId;
-  skuSnapshot: string;
-  nameSnapshot: string;
-  unitPriceCents: number;
-  qty: number;
-  lineTotalCents: number;
-}
 
 export interface SaleProps {
   id: SaleId;
+  userId: string;    // DB user_id
+  total: number;     // DB total Float
+  createdAt: string; // DB created_at String
   items: SaleItem[];
-  totalCents: number;
-  createdAt: Date;
 }
 
 export class Sale {
   private constructor(private readonly props: SaleProps) {}
 
-  static create(input: { id: SaleId; items: Omit<SaleItem, "lineTotalCents">[]; createdAt?: Date }): Sale {
-    const createdAt = input.createdAt ?? new Date();
+  static create(input: {
+    id: SaleId;
+    userId: string;
+    items: Omit<SaleItemProps, "saleId">[];
+    createdAt?: string;
+  }): Sale {
+    const createdAt = input.createdAt ?? new Date().toISOString();
 
     if (!input.id?.trim()) throw new Error("Sale.id is required");
+    if (!input.userId?.trim()) throw new Error("Sale.userId is required");
     if (!Array.isArray(input.items) || input.items.length === 0) throw new Error("Sale.items must not be empty");
 
-    const items: SaleItem[] = input.items.map((it) => {
-      if (!it.productId?.trim()) throw new Error("SaleItem.productId is required");
-      if (!it.skuSnapshot?.trim()) throw new Error("SaleItem.skuSnapshot is required");
-      if (!it.nameSnapshot?.trim()) throw new Error("SaleItem.nameSnapshot is required");
-      if (!Number.isInteger(it.unitPriceCents) || it.unitPriceCents <= 0) throw new Error("SaleItem.unitPriceCents invalid");
-      if (!Number.isInteger(it.qty) || it.qty <= 0) throw new Error("SaleItem.qty invalid");
+    const items = input.items.map((it) => SaleItem.create({ ...it, saleId: input.id }));
+    const total = items.reduce((acc, it) => acc + it.lineTotal, 0);
 
-      const lineTotalCents = it.unitPriceCents * it.qty;
-      return { ...it, lineTotalCents };
-    });
-
-    const totalCents = items.reduce((acc, it) => acc + it.lineTotalCents, 0);
-    return new Sale({ id: input.id, items, totalCents, createdAt });
+    return new Sale({ id: input.id, userId: input.userId, total, createdAt, items });
   }
 
   get id() { return this.props.id; }
-  get items() { return this.props.items; }
-  get totalCents() { return this.props.totalCents; }
+  get userId() { return this.props.userId; }
+  get total() { return this.props.total; }
   get createdAt() { return this.props.createdAt; }
+  get items() { return this.props.items; }
 
-  toJSON(): SaleProps {
-    return { ...this.props };
+  toJSON() {
+    return { ...this.props, items: this.props.items.map((i) => i.toJSON()) };
   }
 }
