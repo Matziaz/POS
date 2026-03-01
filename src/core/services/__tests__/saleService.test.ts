@@ -14,7 +14,7 @@ import { SaleService } from "../SaleService";
 import type { ProductRepository, SaleRepository } from "../../repositories";
 import type { InventoryMovementRepository } from "../../repositories/InventoryMovementRepository";
 
-import { DEFAULT_USER_ID, DEFAULT_PROVIDER_ID } from "../../constants";
+import { DEFAULT_USER_ID, DEFAULT_PROVIDER_ID } from "../../../shared/constants/constants";
 
 // -------- In-memory repos --------
 
@@ -24,6 +24,11 @@ function inMemoryProductRepo(seed: Product[] = []): ProductRepository {
 
   return {
     async save(p) { byId.set(p.id, p); bySku.set(p.sku, p); },
+    async update(p) {
+      // “update” exige que exista
+      if (!byId.has(p.id)) throw new Error("not found");
+      byId.set(p.id, p); bySku.set(p.sku, p);
+    },
     async findById(id) { return byId.get(id) ?? null; },
     async findBySku(sku) { return bySku.get(sku) ?? null; },
     async list() { return [...byId.values()]; },

@@ -1,6 +1,6 @@
 import type { ProductId } from "./Product";
 export type SaleItemId = string;
-export type SaleId = string;
+import type { SaleId } from "./Sale";
 
 export interface SaleItemProps {
   id: SaleItemId;
