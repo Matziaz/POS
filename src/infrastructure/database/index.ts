@@ -7,3 +7,7 @@
 // Placeholder: Database connection
 // Placeholder: Prisma client setup
 // Placeholder: Migration helpers
+
+
+export * from './prismaClient'
+export * from './testConnection'

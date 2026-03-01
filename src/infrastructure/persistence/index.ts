@@ -9,4 +9,5 @@
 // Placeholder: SaleRepository implementation
 // Placeholder: ConfigRepository implementation
 
-export * from "./SQLiteProductRepository.ts";
+export * from "./SQLiteProductRepository";
+export * from "./SQLiteSaleRepository";

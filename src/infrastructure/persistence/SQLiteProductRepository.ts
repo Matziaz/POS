@@ -34,41 +34,26 @@ export class SQLiteProductRepository implements ProductRepository {
 
 
     async findById(id: string): Promise<Product | null> {
-
         const result = await prisma.product.findUnique({
-
             where: { id }
-
         });
-
         if (!result) return null;
-
         return this.toDomain(result);
-
     }
 
 
     async findBySku(sku: string): Promise<Product | null> {
-
         const result = await prisma.product.findUnique({
-
             where: { sku }
-
         });
-
         if (!result) return null;
-
         return this.toDomain(result);
-
     }
 
 
     async list(): Promise<Product[]> {
-
         const results = await prisma.product.findMany();
-
         return results.map(p => this.toDomain(p));
-
     }
 
 
@@ -76,9 +61,7 @@ export class SQLiteProductRepository implements ProductRepository {
      * Convierte Prisma → Domain Entity
      */
     private toDomain(prismaProduct: any): Product {
-
         return Product.create({
-
             id: prismaProduct.id,
             sku: prismaProduct.sku,
             name: prismaProduct.name,
@@ -86,9 +69,6 @@ export class SQLiteProductRepository implements ProductRepository {
             stock: prismaProduct.stock,
             providerId: prismaProduct.provider_id,
             createdAt: prismaProduct.created_at
-
         });
-
     }
-
 }
