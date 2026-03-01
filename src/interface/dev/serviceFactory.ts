@@ -1,43 +1,51 @@
-/**
- * Service Factory — Desarrollo
+/// <reference types="vite/client" />
+import { ProductService, SaleService } from "@core/services";
+import type { ProductRepository, SaleRepository, InventoryMovementRepository } from "@core/repositories";
+
+import { InMemoryProductRepository } from "./InMemoryProductRepository";
+import { InMemorySaleRepository } from "./InMemorySaleRepository";
+import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository";
+
+import { PrismaProductRepository } from "@infrastructure/persistence/PrismaProductRepository";
+// (cuando tengas PrismaSaleRepository, PrismaInventoryMovementRepository, los metes también)
+
+const isDev = import.meta.env.DEV;
+
+// Singletons
+/** Error en app al intentar reemplazar InMemoryProductRepository por PrismaProductRepository:
+ * PrismaClient is unable to run in this browser environment, 
+ * or has been bundled for the browser (running in ``). 
+ * If this is unexpected, please open an issue: https://pris.ly/prisma-prisma-bug-report
  * 
- * Crea instancias de servicios con repositorios en memoria para desarrollo.
- * TODO: Reemplazar con inyección de dependencias real cuando infrastructure/ esté listo.
- */
+ * Se intentó const 'productRepository: ProductRepository = new PrismaProductRepository()' pero falla
 
-import { ProductService, SaleService } from "@core/services"
-import { InMemoryProductRepository } from "./InMemoryProductRepository"
-import { InMemorySaleRepository } from "./InMemorySaleRepository"
-import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository"
+ |
+ v                                                                                                        */
+ 
+const productRepository: ProductRepository = isDev
+  ? new InMemoryProductRepository()
+  : new PrismaProductRepository();
 
-// Singletons: misma instancia compartida en toda la app
-const productRepository = new InMemoryProductRepository()
-const saleRepository = new InMemorySaleRepository()
-const inventoryMovementRepository = new InMemoryInventoryMovementRepository()
+// Por ahora sales siguen en-memory si no tienes repos Prisma aún:
+const saleRepository: SaleRepository = new InMemorySaleRepository();
+const inventoryMovementRepository: InventoryMovementRepository = new InMemoryInventoryMovementRepository();
 
-const productService = new ProductService(productRepository)
-const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository)
-
-// --- Products ---
+const productService = new ProductService(productRepository);
+const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository);
 
 export function getProductService(): ProductService {
-  return productService
+  return productService;
 }
-
-/**
- * Acceso directo al repositorio para operaciones que ProductService aún no soporta
- * (update, delete). Cuando Fer agregue estos métodos al servicio, eliminar este export.
- */
-export function getProductRepository(): InMemoryProductRepository {
-  return productRepository
+export function getProductRepository(): ProductRepository {
+  return productRepository;
 }
-
-// --- Sales ---
-
 export function getSaleService(): SaleService {
-  return saleService
+  return saleService;
+}
+export function getSaleRepository(): SaleRepository {
+  return saleRepository;
 }
 
-export function getSaleRepository(): InMemorySaleRepository {
-  return saleRepository
-}
+// DEV: log para verificar qué repositorio se está usando. Verificar con Ctrl+shifts+I en la app.
+// Sale InMemoryPRoductRepository, entonces aún no está conectado a DB
+console.log('[serviceFactory] Product repo =', productRepository.constructor.name);
