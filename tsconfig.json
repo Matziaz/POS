@@ -33,6 +33,6 @@
       "@shared/*": ["src/shared/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "tsconfig.electron.json"],
   "exclude": ["dist", "node_modules"]
 }
