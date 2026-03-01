@@ -77,6 +77,10 @@ export class InMemoryProductRepository implements ProductRepository {
     return this.save(product)
   }
 
+  async delete(id: string): Promise<void> {
+    this.products.delete(id)
+  }
+
   async findById(id: string): Promise<Product | null> {
     return this.products.get(id) ?? null
   }
@@ -97,7 +101,6 @@ export class InMemoryProductRepository implements ProductRepository {
    * TODO: Este método no existe en la interfaz ProductRepository de core/.
    * Coordinar con Fer para agregarlo al contrato oficial.
    */
-  async delete(id: string): Promise<boolean> {
-    return this.products.delete(id)
-  }
+
+  /* MÉTODO YA IMPLEMENTADO EN CORE -Fer */
 }
