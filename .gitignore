@@ -4,8 +4,38 @@
 
 # Entornos
 .env
+.env.local
+.env.*.local
+
+# Dependencias
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Builds
 build/
 dist/
+.tsbuildinfo
 
+# IDEs y editores
+.vscode/
+.idea/
+.sublime-project
+.sublime-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output
+
+# Vite
+.vite/
+*.vite
+
+# Prisma
+/generated/prisma
