@@ -10,4 +10,3 @@
 
 
 export * from './prismaClient'
-export * from './testConnection'

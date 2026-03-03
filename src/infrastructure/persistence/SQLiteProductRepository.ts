@@ -8,19 +8,8 @@ export class SQLiteProductRepository implements ProductRepository {
 
     async save(product: Product): Promise<void> {
 
-        await prisma.product.upsert({
-            where: {
-                id: product.id},
-            update: {
-                sku: product.sku,
-                name: product.name,
-                price: product.price,
-                stock: product.stock,
-                provider_id: product.providerId,
-                created_at: product.createdAt
-            },
-
-            create: {
+        await prisma.product.create({
+            data: {
                 id: product.id,
                 sku: product.sku,
                 name: product.name,
@@ -28,6 +17,21 @@ export class SQLiteProductRepository implements ProductRepository {
                 stock: product.stock,
                 provider_id: product.providerId,
                 created_at: product.createdAt
+            }
+        });
+    }
+
+    async update(product: Product): Promise<void> {
+        await prisma.product.update({
+            where: { 
+                id: product.id 
+            },
+            data: {
+                sku: product.sku,
+                name: product.name,
+                price: product.price,
+                stock: product.stock,
+                provider_id: product.providerId,
             }
         });
     }
