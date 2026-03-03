@@ -2,7 +2,7 @@
   "name": "pos-adaptable",
   "version": "0.1.0",
   "description": "Sistema POS offline-first para micro-comercios",
-  "main": "dist/main.js",
+  "main": "dist/electron/main.js",
   "homepage": "./",
   "type": "module",
   "engines": {
@@ -10,11 +10,12 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-  "dev": "concurrently \"npm run electron:dev\" \"npm run react-dev\"",
-  "react-dev": "vite",
-  "electron:dev": "tsc --project tsconfig.electron.json --watch",
-  "electron": "electron .",
-  "build": "vite build && tsc --project tsconfig.electron.json"
+    "dev": "concurrently -k \"npm run react-dev\" \"npm run electron:dev\" \"npm run electron:start\"",
+    "react-dev": "vite",
+    "electron:dev": "tsc --project tsconfig.electron.json --watch",
+    "electron:start": "wait-on http://localhost:3000 && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 electron .",
+    "electron": "electron .",
+    "build": "vite build && tsc --project tsconfig.electron.json"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
@@ -44,6 +45,7 @@
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.27",
     "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
     "electron": "^27.0.0",
     "electron-builder": "^24.6.4",
     "eslint": "^8.55.0",
@@ -54,6 +56,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.3.0",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "wait-on": "^9.0.4"
   }
 }
