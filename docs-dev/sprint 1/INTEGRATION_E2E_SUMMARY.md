@@ -128,6 +128,7 @@ Toda operación de base de datos viaja como JSON plano por IPC. Las entidades se
 | `product:findBySku` | Buscar producto por SKU |
 | `product:save` | Guardar/crear producto (upsert) |
 | `product:delete` | Eliminar producto |
+| `product:forceDelete` | Forzar borrado: elimina en transacción las dependencias (`sale_item`, `inventory_movement`) y luego el `product` (solo en desarrollo) |
 | `sale:list` | Listar todas las ventas (con items) |
 | `sale:findById` | Buscar venta por ID (con items) |
 | `sale:save` | Guardar venta con items |
@@ -135,6 +136,25 @@ Toda operación de base de datos viaja como JSON plano por IPC. Las entidades se
 | `inventoryMovement:listByProduct` | Listar movimientos por producto |
 
 ---
+
+## Nota sobre eliminación de productos
+
+- `product:delete` ahora valida que no existan dependencias en `sale_item` ni `inventory_movement` antes de borrar; si existen, lanza un error descriptivo para evitar violaciones de FK.
+- Se añadió `product:forceDelete` (handler de desarrollo) que, en una transacción, elimina primero las filas en `sale_item` y `inventory_movement` relacionadas y luego elimina el `product`. Esto facilita limpiar registros creados por el `seed.ts` sin cambiar la política de FK en producción.
+- Importante: `product:forceDelete` NO elimina automáticamente la fila `sale` aunque quede sin `sale_item` (la venta queda como registro huérfano). Si deseas que las ventas sin items se borren automáticamente, se puede:
+  - incluir la eliminación de ventas vacías dentro de la misma transacción (menos seguro), o
+  - ejecutar un handler separado `sale:cleanupEmpty` después de la operación.
+
+Ejemplo (DevTools Console) para forzar el borrado de `p1`:
+
+```js
+window.electronAPI.invoke('product:forceDelete', 'p1')
+  .then(() => console.log('producto eliminado con dependencias'))
+  .catch(console.error)
+```
+
+Usa esto solo en entornos de desarrollo o cuando estés seguro de las consecuencias sobre la integridad de datos.
+
 
 ## Cómo verificar
 

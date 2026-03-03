@@ -149,7 +149,22 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("product:delete", async (_event, id: string) => {
+    const saleItemsCount = await prisma.sale_item.count({ where: { product_id: id } });
+    const movementsCount = await prisma.inventory_movement.count({ where: { product_id: id } });
+    if (saleItemsCount > 0 || movementsCount > 0) {
+      throw new Error(`Cannot delete product; referenced by ${saleItemsCount} sale items and ${movementsCount} inventory movements`);
+    }
     await prisma.product.delete({ where: { id } });
+  });
+
+  // Force delete: elimina en transacción las dependencias y luego el producto.
+  // Útil para limpiar registros del seeder o forzar borrados en entorno de desarrollo.
+  ipcMain.handle("product:forceDelete", async (_event, id: string) => {
+    await prisma.$transaction(async (tx) => {
+      await tx.sale_item.deleteMany({ where: { product_id: id } });
+      await tx.inventory_movement.deleteMany({ where: { product_id: id } });
+      await tx.product.delete({ where: { id } });
+    });
   });
 }
 
