@@ -96,3 +96,5 @@ export class SQLiteSaleRepository implements SaleRepository {
         });
     }
 }
+
+export{}

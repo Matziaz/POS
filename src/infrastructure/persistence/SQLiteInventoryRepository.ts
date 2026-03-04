@@ -41,7 +41,7 @@ export class SQLiteInventoryMovementRepository
       quantity: prismaMovement.quantity,
       createdAt: prismaMovement.created_at,
     });
-
   }
-
 }
+
+export{}
