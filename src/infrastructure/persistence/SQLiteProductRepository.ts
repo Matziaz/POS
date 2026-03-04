@@ -5,9 +5,7 @@ import { Product } from "../../core/entities/Product.ts";
 
 
 export class SQLiteProductRepository implements ProductRepository {
-
     async save(product: Product): Promise<void> {
-
         await prisma.product.create({
             data: {
                 id: product.id,
@@ -33,6 +31,12 @@ export class SQLiteProductRepository implements ProductRepository {
                 stock: product.stock,
                 provider_id: product.providerId,
             }
+        });
+    }
+
+    async delete(id: string): Promise<void> {
+        await prisma.product.delete({
+            where: { id }
         });
     }
 
@@ -76,3 +80,5 @@ export class SQLiteProductRepository implements ProductRepository {
         });
     }
 }
+
+export{}

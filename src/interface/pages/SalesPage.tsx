@@ -1,7 +1,9 @@
 import React, { useState } from "react"
+import { Plus } from "lucide-react"
 import type { SaleView } from "@interface/store/salesStore"
 import { useSales } from "@interface/hooks/useSales"
-import { SalesTable, SaleDetailDialog } from "@interface/components/sales"
+import { useProducts } from "@interface/hooks/useProducts"
+import { SalesTable, SaleDetailDialog, SaleForm } from "@interface/components/sales"
 import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
 import { Button } from "@interface/components/ui/button"
 
@@ -10,11 +12,15 @@ export const SalesPage: React.FC = () => {
     sales,
     isLoading,
     error,
+    registerSale,
     clearError,
   } = useSales()
 
+  const { products, refetch: refetchProducts } = useProducts()
+
   const [detailOpen, setDetailOpen] = useState(false)
   const [viewingSale, setViewingSale] = useState<SaleView | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   // --- Resumen ---
   const totalVentas = sales.length
@@ -35,6 +41,11 @@ export const SalesPage: React.FC = () => {
     setViewingSale(null)
   }
 
+  const handleRegisterSale = async (lines: { productSku: string; qty: number }[]) => {
+    await registerSale(lines)
+    await refetchProducts()
+  }
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       {/* Header */}
@@ -45,6 +56,10 @@ export const SalesPage: React.FC = () => {
             Historial de ventas registradas
           </p>
         </div>
+        <Button onClick={() => setFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nueva Venta
+        </Button>
       </div>
 
       {/* Tarjetas de resumen */}
@@ -89,6 +104,14 @@ export const SalesPage: React.FC = () => {
         open={detailOpen}
         sale={viewingSale}
         onClose={handleDetailClose}
+      />
+
+      {/* Modal: Registrar venta */}
+      <SaleForm
+        open={formOpen}
+        products={products}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleRegisterSale}
       />
     </div>
   )

@@ -2,17 +2,15 @@
  * Product Store — Zustand
  * 
  * Estado global para la gestión de productos (inventario).
- * Usa el repositorio en memoria para desarrollo.
  * 
- * TODO: Cuando Fer corrija ProductService (agregar update, delete, fix createProduct),
- * refactorizar para usar exclusivamente el servicio en lugar del repositorio directo.
+ * addProduct usa ProductService.createProduct() (ya corregido por Fer).
+ * updateProduct y deleteProduct siguen usando el repositorio directo
+ * porque Fer aún no implementa esos métodos en ProductService.
  */
 
 import { create } from "zustand"
 import type { ProductProps } from "@core/entities"
 import { Product } from "@core/entities"
-import { newId } from "@core/services/id"
-import { DEFAULT_PROVIDER_ID } from "@core/constants"
 import { getProductService, getProductRepository } from "@interface/dev/serviceFactory"
 
 export interface CreateProductInput {
@@ -68,26 +66,14 @@ export const useProductStore = create<ProductState>((set, get) => ({
   addProduct: async (input: CreateProductInput) => {
     set({ isLoading: true, error: null })
     try {
-      const repo = getProductRepository()
-
-      // Verificar SKU duplicado
-      const existing = await repo.findBySku(input.sku)
-      if (existing) {
-        throw new Error(`Ya existe un producto con SKU "${input.sku}"`)
-      }
-
-      // TODO: Usar productService.createProduct() cuando Fer corrija el bug
-      // (actualmente pasa priceCents en vez de price, y no acepta providerId)
-      const product = Product.create({
-        id: newId(),
+      const service = getProductService()
+      await service.createProduct({
         sku: input.sku,
         name: input.name,
         price: input.price,
         stock: input.stock,
-        providerId: input.providerId ?? DEFAULT_PROVIDER_ID,
+        providerId: input.providerId,
       })
-
-      await repo.save(product)
       await get().fetchProducts()
     } catch (err) {
       set({

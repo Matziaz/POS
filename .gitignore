@@ -12,6 +12,14 @@ node_modules/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+.env.local
+.env.*.local
+
+# Dependencias
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Builds
 build/

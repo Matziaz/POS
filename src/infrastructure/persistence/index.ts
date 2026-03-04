@@ -12,3 +12,4 @@
 export * from "./SQLiteProductRepository";
 export * from "./SQLiteSaleRepository";
 export * from "./SQLiteInventoryRepository";
+export * from "./PrismaProductRepository";

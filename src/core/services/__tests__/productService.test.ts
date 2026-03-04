@@ -19,6 +19,13 @@ function inMemoryProductRepo(seed: Product[] = []): ProductRepository {
     },
     async findById(id) { return byId.get(id) ?? null; },
     async findBySku(sku) { return bySku.get(sku) ?? null; },
+    async delete(id) {
+      const p = byId.get(id);
+      if (p) {
+        byId.delete(id);
+        bySku.delete(p.sku);
+      }
+    },
     async list() { return [...byId.values()]; },
   };
 }
