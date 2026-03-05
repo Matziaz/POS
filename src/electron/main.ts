@@ -1,17 +1,14 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { registerAllIpcHandlers, disconnectPrisma } from "./ipcHandlers";
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      // Por ahora simple: no preload
       contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
@@ -28,6 +25,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  registerAllIpcHandlers();
   createWindow();
 
   app.on("activate", () => {
@@ -35,6 +33,7 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", async () => {
+  await disconnectPrisma();
   if (process.platform !== "darwin") app.quit();
 });

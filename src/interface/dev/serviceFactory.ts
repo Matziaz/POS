@@ -6,29 +6,31 @@ import { InMemoryProductRepository } from "./InMemoryProductRepository";
 import { InMemorySaleRepository } from "./InMemorySaleRepository";
 import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository";
 
-import { PrismaProductRepository } from "@infrastructure/persistence/PrismaProductRepository";
-// (cuando tengas PrismaSaleRepository, PrismaInventoryMovementRepository, los metes también)
+import { ElectronProductRepository } from "./ElectronProductRepository";
+import { ElectronSaleRepository } from "./ElectronSaleRepository";
+import { ElectronInventoryMovementRepository } from "./ElectronInventoryMovementRepository";
 
-const isDev = import.meta.env.DEV;
+/**
+ * Detección de entorno:
+ * - Si window.electronAPI existe → estamos en Electron → usar repos IPC (Prisma corre en main process)
+ * - Si no → estamos en un browser puro (vite dev sin Electron) → usar InMemory
+ *
+ * PrismaClient NO puede correr en el renderer (browser). Por eso el IPC bridge.
+ */
+const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
 // Singletons
-/** Error en app al intentar reemplazar InMemoryProductRepository por PrismaProductRepository:
- * PrismaClient is unable to run in this browser environment, 
- * or has been bundled for the browser (running in ``). 
- * If this is unexpected, please open an issue: https://pris.ly/prisma-prisma-bug-report
- * 
- * Se intentó const 'productRepository: ProductRepository = new PrismaProductRepository()' pero falla
+const productRepository: ProductRepository = isElectron
+  ? new ElectronProductRepository()
+  : new InMemoryProductRepository();
 
- |
- v                                                                                                        */
- 
-const productRepository: ProductRepository = isDev
-  ? new InMemoryProductRepository()
-  : new PrismaProductRepository();
+const saleRepository: SaleRepository = isElectron
+  ? new ElectronSaleRepository()
+  : new InMemorySaleRepository();
 
-// Por ahora sales siguen en-memory si no tienes repos Prisma aún:
-const saleRepository: SaleRepository = new InMemorySaleRepository();
-const inventoryMovementRepository: InventoryMovementRepository = new InMemoryInventoryMovementRepository();
+const inventoryMovementRepository: InventoryMovementRepository = isElectron
+  ? new ElectronInventoryMovementRepository()
+  : new InMemoryInventoryMovementRepository();
 
 const productService = new ProductService(productRepository);
 const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository);
@@ -46,6 +48,7 @@ export function getSaleRepository(): SaleRepository {
   return saleRepository;
 }
 
-// DEV: log para verificar qué repositorio se está usando. Verificar con Ctrl+shifts+I en la app.
-// Sale InMemoryPRoductRepository, entonces aún no está conectado a DB
+// DEV: log para verificar qué repositorio se está usando. Verificar con Ctrl+Shift+I en la app.
+console.log('[serviceFactory] Electron detected:', isElectron);
 console.log('[serviceFactory] Product repo =', productRepository.constructor.name);
+console.log('[serviceFactory] Sale repo    =', saleRepository.constructor.name);
