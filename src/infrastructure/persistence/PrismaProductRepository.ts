@@ -1,10 +1,15 @@
 import type { ProductRepository } from "../../core/repositories/ProductRepository";
 import { Product } from "../../core/entities";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../database/prismaClient";
 
+function toISOOrNow(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
 function toDomain(row: any): Product {
-  // row.created_at es String en schema (ej. "2026-02-27 12:34:56")
-  // lo convertimos a ISO string para la entidad
   return Product.create({
     id: row.id,
     sku: row.sku,
@@ -12,15 +17,17 @@ function toDomain(row: any): Product {
     price: row.price,
     stock: row.stock,
     providerId: row.provider_id,
-    createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
+    createdAt: toISOOrNow(row.created_at),
   });
 }
 
 export class PrismaProductRepository implements ProductRepository {
+  constructor(private readonly db: PrismaClient = prisma) {}
+
   async save(product: Product): Promise<void> {
     const p = product.toJSON();
 
-    await prisma.product.upsert({
+    await this.db.product.upsert({
       where: { id: p.id },
       update: {
         name: p.name,
@@ -37,7 +44,7 @@ export class PrismaProductRepository implements ProductRepository {
         price: p.price,
         stock: p.stock,
         provider_id: p.providerId,
-        created_at: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+        created_at: toISOOrNow(p.createdAt),
       },
     });
   }
@@ -47,21 +54,21 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await prisma.product.delete({ where: { id } });
+    await this.db.product.delete({ where: { id } });
   }
 
   async findById(id: string): Promise<Product | null> {
-    const row = await prisma.product.findUnique({ where: { id } });
+    const row = await this.db.product.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
   }
 
   async findBySku(sku: string): Promise<Product | null> {
-    const row = await prisma.product.findUnique({ where: { sku } });
+    const row = await this.db.product.findUnique({ where: { sku } });
     return row ? toDomain(row) : null;
   }
 
   async list(): Promise<Product[]> {
-    const rows = await prisma.product.findMany({ orderBy: { created_at: "desc" as any} });
+    const rows = await this.db.product.findMany({ orderBy: { created_at: "desc" as any} });
     return rows.map(toDomain);
   }
 }

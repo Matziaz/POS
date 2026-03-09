@@ -7,20 +7,27 @@
 
 import type { SaleRepository } from "../../core/repositories/SaleRepository";
 import { Sale } from "../../core/entities/Sale";
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../database/prismaClient";
 
+function toISOOrNow(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
 export class PrismaSaleRepository implements SaleRepository {
+  constructor(private readonly db: PrismaClient = prisma) {}
+
   async save(sale: Sale): Promise<void> {
     const data = sale.toJSON();
 
-    await prisma.sale.create({
+    await this.db.sale.create({
       data: {
         id: data.id,
         user_id: data.userId,
         total: data.total,
-        created_at: data.createdAt
-          ? new Date(data.createdAt).toISOString()
-          : new Date().toISOString(),
+        created_at: toISOOrNow(data.createdAt),
         sale_item: {
           create: data.items.map((item) => ({
             id: item.id,
@@ -34,7 +41,7 @@ export class PrismaSaleRepository implements SaleRepository {
   }
 
   async findById(id: string): Promise<Sale | null> {
-    const row = await prisma.sale.findUnique({
+    const row = await this.db.sale.findUnique({
       where: { id },
       include: { sale_item: true },
     });
@@ -43,9 +50,7 @@ export class PrismaSaleRepository implements SaleRepository {
     return Sale.create({
       id: row.id,
       userId: row.user_id,
-      createdAt: row.created_at
-        ? new Date(row.created_at).toISOString()
-        : new Date().toISOString(),
+      createdAt: toISOOrNow(row.created_at),
       items: row.sale_item.map((si) => ({
         id: si.id,
         productId: si.product_id,
@@ -56,7 +61,7 @@ export class PrismaSaleRepository implements SaleRepository {
   }
 
   async list(): Promise<Sale[]> {
-    const rows = await prisma.sale.findMany({
+    const rows = await this.db.sale.findMany({
       include: { sale_item: true },
       orderBy: { created_at: "desc" as any },
     });
@@ -65,9 +70,7 @@ export class PrismaSaleRepository implements SaleRepository {
       Sale.create({
         id: row.id,
         userId: row.user_id,
-        createdAt: row.created_at
-          ? new Date(row.created_at).toISOString()
-          : new Date().toISOString(),
+        createdAt: toISOOrNow(row.created_at),
         items: row.sale_item.map((si) => ({
           id: si.id,
           productId: si.product_id,

@@ -11,6 +11,12 @@
 import { ipcMain, app } from "electron";
 import { PrismaClient } from "@prisma/client";
 import path from "node:path";
+import { Product } from "../core/entities/Product";
+import { Sale } from "../core/entities/Sale";
+import { InventoryMovement } from "../core/entities/InventoryMovement";
+import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
+import { PrismaSaleRepository } from "../infrastructure/persistence/PrismaSaleRepository";
+import { PrismaInventoryMovementRepository } from "../infrastructure/persistence/PrismaInventoryMovementRepository";
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -23,6 +29,10 @@ const prisma = new PrismaClient({
     },
   },
 });
+
+const productRepository = new PrismaProductRepository(prisma);
+const saleRepository = new PrismaSaleRepository(prisma);
+const inventoryMovementRepository = new PrismaInventoryMovementRepository(prisma);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -60,92 +70,26 @@ interface InventoryMovementJSON {
   createdAt: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function productRowToJSON(row: any): ProductJSON {
-  return {
-    id: row.id,
-    sku: row.sku,
-    name: row.name,
-    price: row.price,
-    stock: row.stock,
-    providerId: row.provider_id,
-    createdAt: row.created_at
-      ? new Date(row.created_at).toISOString()
-      : new Date().toISOString(),
-  };
-}
-
-function saleRowToJSON(row: any): SaleJSON {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    total: row.total,
-    createdAt: row.created_at
-      ? new Date(row.created_at).toISOString()
-      : new Date().toISOString(),
-    items: (row.sale_item || []).map((si: any) => ({
-      id: si.id,
-      saleId: si.sale_id,
-      productId: si.product_id,
-      quantity: si.quantity,
-      price: si.price,
-    })),
-  };
-}
-
-function movementRowToJSON(row: any): InventoryMovementJSON {
-  return {
-    id: row.id,
-    productId: row.product_id,
-    type: row.type as "IN" | "OUT",
-    quantity: row.quantity,
-    createdAt: row.created_at
-      ? new Date(row.created_at).toISOString()
-      : new Date().toISOString(),
-  };
-}
-
 // ─── Product handlers ─────────────────────────────────────────────────────────
 
 function registerProductHandlers() {
   ipcMain.handle("product:list", async () => {
-    const rows = await prisma.product.findMany({
-      orderBy: { created_at: "desc" },
-    });
-    return rows.map(productRowToJSON);
+    const products = await productRepository.list();
+    return products.map((product) => product.toJSON());
   });
 
   ipcMain.handle("product:findById", async (_event, id: string) => {
-    const row = await prisma.product.findUnique({ where: { id } });
-    return row ? productRowToJSON(row) : null;
+    const product = await productRepository.findById(id);
+    return product ? product.toJSON() : null;
   });
 
   ipcMain.handle("product:findBySku", async (_event, sku: string) => {
-    const row = await prisma.product.findUnique({ where: { sku } });
-    return row ? productRowToJSON(row) : null;
+    const product = await productRepository.findBySku(sku);
+    return product ? product.toJSON() : null;
   });
 
   ipcMain.handle("product:save", async (_event, data: ProductJSON) => {
-    await prisma.product.upsert({
-      where: { id: data.id },
-      update: {
-        name: data.name,
-        sku: data.sku,
-        price: data.price,
-        stock: data.stock,
-        provider_id: data.providerId,
-      },
-      create: {
-        id: data.id,
-        name: data.name,
-        sku: data.sku,
-        price: data.price,
-        stock: data.stock,
-        provider_id: data.providerId,
-        created_at: data.createdAt || new Date().toISOString(),
-      },
-    });
+    await productRepository.save(Product.create(data));
   });
 
   ipcMain.handle("product:delete", async (_event, id: string) => {
@@ -154,7 +98,7 @@ function registerProductHandlers() {
     if (saleItemsCount > 0 || movementsCount > 0) {
       throw new Error(`Cannot delete product; referenced by ${saleItemsCount} sale items and ${movementsCount} inventory movements`);
     }
-    await prisma.product.delete({ where: { id } });
+    await productRepository.delete(id);
   });
 
   // Force delete: elimina en transacción las dependencias y luego el producto.
@@ -172,38 +116,29 @@ function registerProductHandlers() {
 
 function registerSaleHandlers() {
   ipcMain.handle("sale:list", async () => {
-    const rows = await prisma.sale.findMany({
-      include: { sale_item: true },
-      orderBy: { created_at: "desc" },
-    });
-    return rows.map(saleRowToJSON);
+    const sales = await saleRepository.list();
+    return sales.map((sale) => sale.toJSON());
   });
 
   ipcMain.handle("sale:findById", async (_event, id: string) => {
-    const row = await prisma.sale.findUnique({
-      where: { id },
-      include: { sale_item: true },
-    });
-    return row ? saleRowToJSON(row) : null;
+    const sale = await saleRepository.findById(id);
+    return sale ? sale.toJSON() : null;
   });
 
   ipcMain.handle("sale:save", async (_event, data: SaleJSON) => {
-    await prisma.sale.create({
-      data: {
+    await saleRepository.save(
+      Sale.create({
         id: data.id,
-        user_id: data.userId,
-        total: data.total,
-        created_at: data.createdAt || new Date().toISOString(),
-        sale_item: {
-          create: data.items.map((item) => ({
-            id: item.id,
-            product_id: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
-      },
-    });
+        userId: data.userId,
+        createdAt: data.createdAt,
+        items: data.items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      })
+    );
   });
 }
 
@@ -211,23 +146,12 @@ function registerSaleHandlers() {
 
 function registerInventoryMovementHandlers() {
   ipcMain.handle("inventoryMovement:save", async (_event, data: InventoryMovementJSON) => {
-    await prisma.inventory_movement.create({
-      data: {
-        id: data.id,
-        product_id: data.productId,
-        type: data.type,
-        quantity: data.quantity,
-        created_at: data.createdAt || new Date().toISOString(),
-      },
-    });
+    await inventoryMovementRepository.save(InventoryMovement.create(data));
   });
 
   ipcMain.handle("inventoryMovement:listByProduct", async (_event, productId: string) => {
-    const rows = await prisma.inventory_movement.findMany({
-      where: { product_id: productId },
-      orderBy: { created_at: "desc" },
-    });
-    return rows.map(movementRowToJSON);
+    const movements = await inventoryMovementRepository.listByProduct(productId);
+    return movements.map((movement) => movement.toJSON());
   });
 }
 
