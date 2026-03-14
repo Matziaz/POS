@@ -3,14 +3,13 @@
  * 
  * Estado global para la gestión de productos (inventario).
  * 
- * addProduct usa ProductService.createProduct() (ya corregido por Fer).
- * updateProduct y deleteProduct siguen usando el repositorio directo
- * porque Fer aún no implementa esos métodos en ProductService.
+ * addProduct y updateProduct usan ProductService para aplicar
+ * reglas de negocio y trazabilidad de movimientos de inventario.
+ * deleteProduct sigue usando el repositorio directo.
  */
 
 import { create } from "zustand"
 import type { ProductProps } from "@core/entities"
-import { Product } from "@core/entities"
 import { getProductService, getProductRepository } from "@interface/dev/serviceFactory"
 
 export interface CreateProductInput {
@@ -87,33 +86,15 @@ export const useProductStore = create<ProductState>((set, get) => ({
   updateProduct: async (id: string, input: UpdateProductInput) => {
     set({ isLoading: true, error: null })
     try {
-      const repo = getProductRepository()
-      const existing = await repo.findById(id)
-
-      if (!existing) {
-        throw new Error("Producto no encontrado")
-      }
-
-      // Verificar SKU duplicado si se cambió
-      if (input.sku && input.sku !== existing.sku) {
-        const duplicate = await repo.findBySku(input.sku)
-        if (duplicate) {
-          throw new Error(`Ya existe un producto con SKU "${input.sku}"`)
-        }
-      }
-
-      // TODO: Usar productService.updateProduct() cuando Fer lo implemente
-      const updated = Product.create({
-        id: existing.id,
-        sku: input.sku ?? existing.sku,
-        name: input.name ?? existing.name,
-        price: input.price ?? existing.price,
-        stock: input.stock ?? existing.stock,
-        providerId: input.providerId ?? existing.providerId,
-        createdAt: existing.createdAt,
+      const service = getProductService()
+      await service.updateProduct({
+        id,
+        sku: input.sku,
+        name: input.name,
+        price: input.price,
+        stock: input.stock,
+        providerId: input.providerId,
       })
-
-      await repo.save(updated)
       await get().fetchProducts()
     } catch (err) {
       set({

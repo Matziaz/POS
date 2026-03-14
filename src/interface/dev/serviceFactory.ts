@@ -32,7 +32,7 @@ const inventoryMovementRepository: InventoryMovementRepository = isElectron
   ? new ElectronInventoryMovementRepository()
   : new InMemoryInventoryMovementRepository();
 
-const productService = new ProductService(productRepository);
+const productService = new ProductService(productRepository, inventoryMovementRepository);
 const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository);
 
 export function getProductService(): ProductService {

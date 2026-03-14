@@ -1,11 +1,27 @@
 import { ValidationError, NotFoundError } from "../errors";
-import type { ProductRepository } from "../repositories";
-import { Product } from "../entities";
+import type { InventoryMovementRepository, ProductRepository } from "../repositories";
+import { Product, InventoryMovement } from "../entities";
 import { newId } from "./id";
 import { DEFAULT_PROVIDER_ID } from "../../shared/constants/constants";
 
 export class ProductService {
-  constructor(private readonly products: ProductRepository) {}
+  constructor(
+    private readonly products: ProductRepository,
+    private readonly movements: InventoryMovementRepository
+  ) {}
+
+  private async recordStockMovement(productId: string, delta: number): Promise<void> {
+    if (delta === 0) return;
+
+    const movement = InventoryMovement.create({
+      id: newId(),
+      productId,
+      type: delta > 0 ? "IN" : "OUT",
+      quantity: Math.abs(delta),
+    });
+
+    await this.movements.save(movement);
+  }
 
   async createProduct(input: {
     sku: string;
@@ -44,7 +60,65 @@ export class ProductService {
     });
 
     await this.products.save(product);
+    await this.recordStockMovement(product.id, stock);
     return product;
+  }
+
+  async updateProduct(input: {
+    id: string;
+    sku?: string;
+    name?: string;
+    price?: number;
+    stock?: number;
+    providerId?: string;
+  }): Promise<Product> {
+    const id = input.id?.trim();
+    if (!id) throw new ValidationError("id is required");
+
+    const existing = await this.products.findById(id);
+    if (!existing) throw new NotFoundError(`Product not found for id: ${id}`);
+
+    const sku = input.sku !== undefined ? input.sku.trim() : existing.sku;
+    const name = input.name !== undefined ? input.name.trim() : existing.name;
+    const providerId = input.providerId !== undefined
+      ? input.providerId.trim() || DEFAULT_PROVIDER_ID
+      : existing.providerId;
+
+    if (!sku) throw new ValidationError("sku is required");
+    if (!name) throw new ValidationError("name is required");
+
+    if (input.price !== undefined) {
+      if (typeof input.price !== "number" || !Number.isFinite(input.price) || input.price <= 0) {
+        throw new ValidationError("price must be a positive number");
+      }
+    }
+
+    if (input.stock !== undefined) {
+      if (!Number.isInteger(input.stock) || input.stock < 0) {
+        throw new ValidationError("stock must be a non-negative integer");
+      }
+    }
+
+    if (sku !== existing.sku) {
+      const duplicate = await this.products.findBySku(sku);
+      if (duplicate && duplicate.id !== existing.id) {
+        throw new ValidationError(`SKU already exists: ${sku}`);
+      }
+    }
+
+    const updated = Product.create({
+      id: existing.id,
+      sku,
+      name,
+      price: input.price ?? existing.price,
+      stock: input.stock ?? existing.stock,
+      providerId,
+      createdAt: existing.createdAt,
+    });
+
+    await this.products.update(updated);
+    await this.recordStockMovement(updated.id, updated.stock - existing.stock);
+    return updated;
   }
 
   async setStockBySku(input: { sku: string; stock: number }): Promise<Product> {
@@ -58,6 +132,7 @@ export class ProductService {
 
     const updated = p.withStock(input.stock);
     await this.products.update(updated);
+    await this.recordStockMovement(updated.id, updated.stock - p.stock);
     return updated;
   }
 
@@ -75,6 +150,7 @@ export class ProductService {
 
     const updated = p.withStock(next);
     await this.products.update(updated);
+    await this.recordStockMovement(updated.id, input.delta);
     return updated;
   }
 
