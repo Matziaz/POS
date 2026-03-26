@@ -1,6 +1,6 @@
 import React from "react"
 import { NavLink } from "react-router-dom"
-import { Package, ShoppingCart } from "lucide-react"
+import { Package, ShoppingCart, ScanLine } from "lucide-react"
 import { cn } from "@interface/lib/utils"
 import { APP_NAME } from "@shared/constants"
 
@@ -8,11 +8,13 @@ interface NavItemProps {
   to: string
   icon: React.ReactNode
   label: string
+  end?: boolean
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => (
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, end = false }) => (
   <NavLink
     to={to}
+    end={end}
     className={({ isActive }) =>
       cn(
         "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
@@ -45,9 +47,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               label="Inventario"
             />
             <NavItem
+              to="/ventas/terminal"
+              icon={<ScanLine className="h-4 w-4" />}
+              label="Terminal"
+            />
+            <NavItem
               to="/ventas"
               icon={<ShoppingCart className="h-4 w-4" />}
-              label="Ventas"
+              label="Historial"
+              end
             />
           </nav>
         </div>
