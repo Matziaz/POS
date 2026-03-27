@@ -24,6 +24,7 @@ model product {
   stock              Int                  @default(0)
   provider_id        String
   created_at         String               @default("CURRENT_TIMESTAMP")
+  image              String?              @default("https://img.icons8.com/?size=100&id=7621&format=png&color=000000")
   inventory_movement inventory_movement[]
   provider           provider             @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sale_item          sale_item[]
@@ -34,6 +35,7 @@ model provider {
   name      String    @unique(map: "sqlite_autoindex_provider_2")
   telephone String?
   email     String?
+  image     String?   @default("https://img.icons8.com/?size=100&id=60773&format=png&color=000000")
   product   product[]
 }
 
@@ -58,8 +60,8 @@ model sale_item {
   product_id String
   quantity   Int
   price      Float
-  product    product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sale       sale    @relation(fields: [sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product    product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model user {

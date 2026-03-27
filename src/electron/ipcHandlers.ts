@@ -43,6 +43,7 @@ interface ProductJSON {
   price: number;
   stock: number;
   providerId: string;
+  image: string;
   createdAt: string;
 }
 

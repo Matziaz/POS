@@ -17,6 +17,7 @@ function toDomain(row: any): Product {
     price: row.price,
     stock: row.stock,
     providerId: row.provider_id,
+    image: row.image,
     createdAt: toISOOrNow(row.created_at),
   });
 }
@@ -35,7 +36,7 @@ export class PrismaProductRepository implements ProductRepository {
         price: p.price,
         stock: p.stock,
         provider_id: p.providerId,
-        // created_at lo dejamos tal cual para no “pisar” timestamps en updates
+        image: p.image,
       },
       create: {
         id: p.id,
@@ -44,6 +45,7 @@ export class PrismaProductRepository implements ProductRepository {
         price: p.price,
         stock: p.stock,
         provider_id: p.providerId,
+        image: p.image,
         created_at: toISOOrNow(p.createdAt),
       },
     });
