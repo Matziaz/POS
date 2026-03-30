@@ -29,6 +29,7 @@ export class ProductService {
     price: number;
     stock?: number;
     providerId?: string;
+    image?: string | null;
   }): Promise<Product> {
     const sku = input.sku?.trim();
     const name = input.name?.trim();
@@ -57,6 +58,7 @@ export class ProductService {
       price: input.price,
       stock,
       providerId,
+      image: input.image ?? "",
     });
 
     await this.products.save(product);
@@ -71,6 +73,7 @@ export class ProductService {
     price?: number;
     stock?: number;
     providerId?: string;
+    image: string;
   }): Promise<Product> {
     const id = input.id?.trim();
     if (!id) throw new ValidationError("id is required");
@@ -83,6 +86,9 @@ export class ProductService {
     const providerId = input.providerId !== undefined
       ? input.providerId.trim() || DEFAULT_PROVIDER_ID
       : existing.providerId;
+    const image = input.image !== undefined
+      ? input.image
+      : existing.image ?? "";
 
     if (!sku) throw new ValidationError("sku is required");
     if (!name) throw new ValidationError("name is required");
@@ -113,6 +119,7 @@ export class ProductService {
       price: input.price ?? existing.price,
       stock: input.stock ?? existing.stock,
       providerId,
+      image,
       createdAt: existing.createdAt,
     });
 

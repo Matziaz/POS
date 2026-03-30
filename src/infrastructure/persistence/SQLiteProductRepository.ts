@@ -14,6 +14,7 @@ export class SQLiteProductRepository implements ProductRepository {
                 price: product.price,
                 stock: product.stock,
                 provider_id: product.providerId,
+                image: product.image,
                 created_at: product.createdAt
             }
         });
@@ -30,6 +31,7 @@ export class SQLiteProductRepository implements ProductRepository {
                 price: product.price,
                 stock: product.stock,
                 provider_id: product.providerId,
+                image: product.image,
             }
         });
     }
@@ -76,6 +78,7 @@ export class SQLiteProductRepository implements ProductRepository {
             price: prismaProduct.price,
             stock: prismaProduct.stock,
             providerId: prismaProduct.provider_id,
+            image: prismaProduct.image_url,
             createdAt: prismaProduct.created_at
         });
     }

@@ -87,6 +87,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>SKU</TableHead>
+            <TableHead>Imagen</TableHead>
             <TableHead>Nombre</TableHead>
             <TableHead className="text-right">Precio</TableHead>
             <TableHead className="text-center">Stock</TableHead>
@@ -99,6 +100,9 @@ export const ProductTable: React.FC<ProductTableProps> = ({
           {products.map((product) => (
             <TableRow key={product.id}>
               <TableCell className="font-mono text-sm">{product.sku}</TableCell>
+              <TableCell>
+                <img src={product.image} className="h-10 w-10 object-cover rounded-md"/>
+              </TableCell>
               <TableCell className="font-medium">{product.name}</TableCell>
               <TableCell className="text-right">{formatPrice(product.price)}</TableCell>
               <TableCell className="text-center">
