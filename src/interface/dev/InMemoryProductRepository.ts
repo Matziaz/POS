@@ -10,7 +10,7 @@
 
 import { Product } from "@core/entities"
 import type { ProductRepository } from "@core/repositories"
-import { DEFAULT_PROVIDER_ID } from "@core/constants"
+import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "@core/constants"
 import { newId } from "@core/services/id"
 
 export class InMemoryProductRepository implements ProductRepository {
@@ -26,6 +26,7 @@ export class InMemoryProductRepository implements ProductRepository {
         id: newId(),
         sku: "COCA-600",
         name: "Coca-Cola 600ml",
+        typeId: DEFAULT_PRODUCT_TYPE_ID,
         price: 18.50,
         stock: 24,
         providerId: DEFAULT_PROVIDER_ID,
@@ -34,6 +35,7 @@ export class InMemoryProductRepository implements ProductRepository {
         id: newId(),
         sku: "SAB-MARUC",
         name: "Sopa Maruchan",
+        typeId: DEFAULT_PRODUCT_TYPE_ID,
         price: 14.00,
         stock: 36,
         providerId: DEFAULT_PROVIDER_ID,
@@ -42,6 +44,7 @@ export class InMemoryProductRepository implements ProductRepository {
         id: newId(),
         sku: "GAL-ALPURA",
         name: "Leche Alpura 1L",
+        typeId: DEFAULT_PRODUCT_TYPE_ID,
         price: 28.90,
         stock: 12,
         providerId: DEFAULT_PROVIDER_ID,
@@ -50,6 +53,7 @@ export class InMemoryProductRepository implements ProductRepository {
         id: newId(),
         sku: "PAN-BIMBO",
         name: "Pan Bimbo Grande",
+        typeId: DEFAULT_PRODUCT_TYPE_ID,
         price: 52.00,
         stock: 8,
         providerId: DEFAULT_PROVIDER_ID,
@@ -58,6 +62,7 @@ export class InMemoryProductRepository implements ProductRepository {
         id: newId(),
         sku: "JAB-ZOTE",
         name: "Jabón Zote",
+        typeId: DEFAULT_PRODUCT_TYPE_ID,
         price: 22.50,
         stock: 15,
         providerId: DEFAULT_PROVIDER_ID,
@@ -71,6 +76,14 @@ export class InMemoryProductRepository implements ProductRepository {
 
   async save(product: Product): Promise<void> {
     this.products.set(product.id, product)
+  }
+
+  async update(product: Product): Promise<void> {
+    return this.save(product)
+  }
+
+  async delete(id: string): Promise<void> {
+    this.products.delete(id)
   }
 
   async findById(id: string): Promise<Product | null> {
@@ -93,7 +106,6 @@ export class InMemoryProductRepository implements ProductRepository {
    * TODO: Este método no existe en la interfaz ProductRepository de core/.
    * Coordinar con Fer para agregarlo al contrato oficial.
    */
-  async delete(id: string): Promise<boolean> {
-    return this.products.delete(id)
-  }
+
+  /* MÉTODO YA IMPLEMENTADO EN CORE -Fer */
 }

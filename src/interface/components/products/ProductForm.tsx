@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import type { ProductProps } from "@core/entities"
-import { DEFAULT_PROVIDER_ID } from "@core/constants"
+import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "@core/constants"
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 import { Button } from "@interface/components/ui/button"
 import { Input } from "@interface/components/ui/input"
 import { Label } from "@interface/components/ui/label"
+import { DEFAULT_PRODUCT_IMAGE } from "@/shared/constants/constants"
 
 interface ProductFormProps {
   open: boolean
@@ -23,23 +24,29 @@ interface ProductFormProps {
 export interface ProductFormData {
   sku: string
   name: string
+  typeId: string
   price: number
   stock: number
+  image?: string
   providerId: string
 }
 
 interface FormErrors {
   sku?: string
   name?: string
+  typeId?: string
   price?: string
   stock?: string
+  image?: string
 }
 
 const INITIAL_FORM: ProductFormData = {
   sku: "",
   name: "",
+  typeId: DEFAULT_PRODUCT_TYPE_ID,
   price: 0,
   stock: 0,
+  image: DEFAULT_PRODUCT_IMAGE,
   providerId: DEFAULT_PROVIDER_ID,
 }
 
@@ -52,6 +59,10 @@ function validate(data: ProductFormData): FormErrors {
 
   if (!data.name.trim()) {
     errors.name = "El nombre es obligatorio"
+  }
+
+  if (!data.typeId.trim()) {
+    errors.typeId = "El tipo es obligatorio"
   }
 
   if (!data.price || data.price <= 0) {
@@ -83,8 +94,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         setForm({
           sku: product.sku,
           name: product.name,
+          typeId: product.typeId,
           price: product.price,
           stock: product.stock,
+          image: product.image,
           providerId: product.providerId,
         })
       } else {
@@ -184,6 +197,29 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               </div>
             </div>
 
+            {/* Tipo */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="typeId" className="text-right">
+                Tipo
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="typeId"
+                  value={form.typeId}
+                  onChange={(e) => handleChange("typeId", e.target.value)}
+                  placeholder="Ej: 1"
+                  disabled={isSubmitting}
+                  className={errors.typeId ? "border-destructive" : ""}
+                />
+                {errors.typeId && (
+                  <p className="text-sm text-destructive mt-1">{errors.typeId}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  1 = Bebida - 2 = Panaderia - 3 = Botana
+                </p>
+              </div>
+            </div>
+
             {/* Precio */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="price" className="text-right">
@@ -231,6 +267,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 {errors.stock && (
                   <p className="text-sm text-destructive mt-1">{errors.stock}</p>
                 )}
+              </div>
+            </div>
+
+            {/* Imagen */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="image" className="text-right">
+                Imagen
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="image"
+                  value={form.image}
+                  onChange={(e) => handleChange("image", e.target.value)}
+                  placeholder="URL de la imagen"
+                  disabled={isSubmitting}
+                  className={errors.image ? "border-destructive" : ""}
+                />
               </div>
             </div>
 

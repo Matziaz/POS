@@ -2,32 +2,33 @@
  * Product Store — Zustand
  * 
  * Estado global para la gestión de productos (inventario).
- * Usa el repositorio en memoria para desarrollo.
  * 
- * TODO: Cuando Fer corrija ProductService (agregar update, delete, fix createProduct),
- * refactorizar para usar exclusivamente el servicio en lugar del repositorio directo.
+ * addProduct y updateProduct usan ProductService para aplicar
+ * reglas de negocio y trazabilidad de movimientos de inventario.
+ * deleteProduct sigue usando el repositorio directo.
  */
 
 import { create } from "zustand"
 import type { ProductProps } from "@core/entities"
-import { Product } from "@core/entities"
-import { newId } from "@core/services/id"
-import { DEFAULT_PROVIDER_ID } from "@core/constants"
 import { getProductService, getProductRepository } from "@interface/dev/serviceFactory"
 
 export interface CreateProductInput {
   sku: string
   name: string
+  typeId: string
   price: number
   stock: number
+  image?: string
   providerId?: string
 }
 
 export interface UpdateProductInput {
   name?: string
   sku?: string
+  typeId?: string
   price?: number
   stock?: number
+  image?: string
   providerId?: string
 }
 
@@ -68,26 +69,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
   addProduct: async (input: CreateProductInput) => {
     set({ isLoading: true, error: null })
     try {
-      const repo = getProductRepository()
-
-      // Verificar SKU duplicado
-      const existing = await repo.findBySku(input.sku)
-      if (existing) {
-        throw new Error(`Ya existe un producto con SKU "${input.sku}"`)
-      }
-
-      // TODO: Usar productService.createProduct() cuando Fer corrija el bug
-      // (actualmente pasa priceCents en vez de price, y no acepta providerId)
-      const product = Product.create({
-        id: newId(),
+      const service = getProductService()
+      await service.createProduct({
         sku: input.sku,
         name: input.name,
+        typeId: input.typeId,
         price: input.price,
         stock: input.stock,
-        providerId: input.providerId ?? DEFAULT_PROVIDER_ID,
+        image: input.image,
+        providerId: input.providerId,
       })
-
-      await repo.save(product)
       await get().fetchProducts()
     } catch (err) {
       set({
@@ -101,33 +92,17 @@ export const useProductStore = create<ProductState>((set, get) => ({
   updateProduct: async (id: string, input: UpdateProductInput) => {
     set({ isLoading: true, error: null })
     try {
-      const repo = getProductRepository()
-      const existing = await repo.findById(id)
-
-      if (!existing) {
-        throw new Error("Producto no encontrado")
-      }
-
-      // Verificar SKU duplicado si se cambió
-      if (input.sku && input.sku !== existing.sku) {
-        const duplicate = await repo.findBySku(input.sku)
-        if (duplicate) {
-          throw new Error(`Ya existe un producto con SKU "${input.sku}"`)
-        }
-      }
-
-      // TODO: Usar productService.updateProduct() cuando Fer lo implemente
-      const updated = Product.create({
-        id: existing.id,
-        sku: input.sku ?? existing.sku,
-        name: input.name ?? existing.name,
-        price: input.price ?? existing.price,
-        stock: input.stock ?? existing.stock,
-        providerId: input.providerId ?? existing.providerId,
-        createdAt: existing.createdAt,
+      const service = getProductService()
+      await service.updateProduct({
+        id,
+        sku: input.sku,
+        name: input.name,
+        typeId: input.typeId,
+        price: input.price,
+        stock: input.stock,
+        providerId: input.providerId,
+        image: input.image,
       })
-
-      await repo.save(updated)
       await get().fetchProducts()
     } catch (err) {
       set({

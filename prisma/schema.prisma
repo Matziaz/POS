@@ -20,11 +20,14 @@ model product {
   id                 String               @id
   name               String
   sku                String               @unique(map: "sqlite_autoindex_product_2")
+  type_id            String
   price              Float
   stock              Int                  @default(0)
   provider_id        String
+  image              String?              @default("https://img.icons8.com/?size=100&id=60773&format=png&color=000000")
   created_at         String               @default("CURRENT_TIMESTAMP")
   inventory_movement inventory_movement[]
+  product_type       product_type         @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction) @ignore
   provider           provider             @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sale_item          sale_item[]
 }
@@ -34,6 +37,7 @@ model provider {
   name      String    @unique(map: "sqlite_autoindex_provider_2")
   telephone String?
   email     String?
+  image     String?   @default("https://img.icons8.com/?size=100&id=60773&format=png&color=000000")
   product   product[]
 }
 
@@ -70,4 +74,13 @@ model user {
   created_at String @default("CURRENT_TIMESTAMP")
   sale       sale[]
   role       role   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model product_type {
+  id      String?   @id
+  name    String
+  product product[]
+
+  @@ignore
 }

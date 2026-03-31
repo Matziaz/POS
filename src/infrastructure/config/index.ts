@@ -7,3 +7,5 @@
 // Placeholder: Environment variables loader
 // Placeholder: App configuration
 // Placeholder: Database path
+
+export {};

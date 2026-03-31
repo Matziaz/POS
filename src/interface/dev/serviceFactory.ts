@@ -1,43 +1,54 @@
+/// <reference types="vite/client" />
+import { ProductService, SaleService } from "@core/services";
+import type { ProductRepository, SaleRepository, InventoryMovementRepository } from "@core/repositories";
+
+import { InMemoryProductRepository } from "./InMemoryProductRepository";
+import { InMemorySaleRepository } from "./InMemorySaleRepository";
+import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository";
+
+import { ElectronProductRepository } from "./ElectronProductRepository";
+import { ElectronSaleRepository } from "./ElectronSaleRepository";
+import { ElectronInventoryMovementRepository } from "./ElectronInventoryMovementRepository";
+
 /**
- * Service Factory — Desarrollo
- * 
- * Crea instancias de servicios con repositorios en memoria para desarrollo.
- * TODO: Reemplazar con inyección de dependencias real cuando infrastructure/ esté listo.
+ * Detección de entorno:
+ * - Si window.electronAPI existe → estamos en Electron → usar repos IPC (Prisma corre en main process)
+ * - Si no → estamos en un browser puro (vite dev sin Electron) → usar InMemory
+ *
+ * PrismaClient NO puede correr en el renderer (browser). Por eso el IPC bridge.
  */
+const isElectron = typeof window !== "undefined" && !!window.electronAPI;
 
-import { ProductService, SaleService } from "@core/services"
-import { InMemoryProductRepository } from "./InMemoryProductRepository"
-import { InMemorySaleRepository } from "./InMemorySaleRepository"
-import { InMemoryInventoryMovementRepository } from "./InMemoryInventoryMovementRepository"
+// Singletons
+const productRepository: ProductRepository = isElectron
+  ? new ElectronProductRepository()
+  : new InMemoryProductRepository();
 
-// Singletons: misma instancia compartida en toda la app
-const productRepository = new InMemoryProductRepository()
-const saleRepository = new InMemorySaleRepository()
-const inventoryMovementRepository = new InMemoryInventoryMovementRepository()
+const saleRepository: SaleRepository = isElectron
+  ? new ElectronSaleRepository()
+  : new InMemorySaleRepository();
 
-const productService = new ProductService(productRepository)
-const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository)
+const inventoryMovementRepository: InventoryMovementRepository = isElectron
+  ? new ElectronInventoryMovementRepository()
+  : new InMemoryInventoryMovementRepository();
 
-// --- Products ---
+const productService = new ProductService(productRepository, inventoryMovementRepository);
+const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository);
 
 export function getProductService(): ProductService {
-  return productService
+  return productService;
 }
-
-/**
- * Acceso directo al repositorio para operaciones que ProductService aún no soporta
- * (update, delete). Cuando Fer agregue estos métodos al servicio, eliminar este export.
- */
-export function getProductRepository(): InMemoryProductRepository {
-  return productRepository
+export function getProductRepository(): ProductRepository {
+  return productRepository;
 }
-
-// --- Sales ---
-
 export function getSaleService(): SaleService {
-  return saleService
+  return saleService;
+}
+export function getSaleRepository(): SaleRepository {
+  return saleRepository;
 }
 
-export function getSaleRepository(): InMemorySaleRepository {
-  return saleRepository
-}
+// DEV: log para verificar qué repositorio se está usando. Verificar con Ctrl+Shift+I en la app.
+console.log('[serviceFactory] Electron detected:', isElectron);
+console.log('[serviceFactory] Product repo =', productRepository.constructor.name);
+console.log('[serviceFactory] Sale repo    =', saleRepository.constructor.name);

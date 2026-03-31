@@ -81,7 +81,7 @@ async function main() {
       id: 'provider_cafe_001',
       name: 'Cafetería del Sur',
       telephone: '555-1234',
-      email: 'ventas@cafedelsur.com',
+      email: 'ventas@cafedelsur.com'
     },
   });
 
