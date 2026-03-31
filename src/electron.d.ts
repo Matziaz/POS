@@ -7,6 +7,7 @@ interface ProductJSON {
   id: string
   sku: string
   name: string
+  typeId: string
   price: number
   stock: number
   providerId: string

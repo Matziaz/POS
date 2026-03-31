@@ -15,16 +15,20 @@ import { getProductService, getProductRepository } from "@interface/dev/serviceF
 export interface CreateProductInput {
   sku: string
   name: string
+  typeId: string
   price: number
   stock: number
+  image?: string
   providerId?: string
 }
 
 export interface UpdateProductInput {
   name?: string
   sku?: string
+  typeId?: string
   price?: number
   stock?: number
+  image?: string
   providerId?: string
 }
 
@@ -69,8 +73,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
       await service.createProduct({
         sku: input.sku,
         name: input.name,
+        typeId: input.typeId,
         price: input.price,
         stock: input.stock,
+        image: input.image,
         providerId: input.providerId,
       })
       await get().fetchProducts()
@@ -91,9 +97,11 @@ export const useProductStore = create<ProductState>((set, get) => ({
         id,
         sku: input.sku,
         name: input.name,
+        typeId: input.typeId,
         price: input.price,
         stock: input.stock,
         providerId: input.providerId,
+        image: input.image,
       })
       await get().fetchProducts()
     } catch (err) {

@@ -11,6 +11,7 @@ export class SQLiteProductRepository implements ProductRepository {
                 id: product.id,
                 sku: product.sku,
                 name: product.name,
+                type_id: product.typeId,
                 price: product.price,
                 stock: product.stock,
                 provider_id: product.providerId,
@@ -28,6 +29,7 @@ export class SQLiteProductRepository implements ProductRepository {
             data: {
                 sku: product.sku,
                 name: product.name,
+                type_id: product.typeId,
                 price: product.price,
                 stock: product.stock,
                 provider_id: product.providerId,
@@ -75,10 +77,11 @@ export class SQLiteProductRepository implements ProductRepository {
             id: prismaProduct.id,
             sku: prismaProduct.sku,
             name: prismaProduct.name,
+            typeId: prismaProduct.type_id,
             price: prismaProduct.price,
             stock: prismaProduct.stock,
             providerId: prismaProduct.provider_id,
-            image: prismaProduct.image_url,
+            image: prismaProduct.image,
             createdAt: prismaProduct.created_at
         });
     }

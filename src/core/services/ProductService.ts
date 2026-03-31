@@ -2,7 +2,7 @@ import { ValidationError, NotFoundError } from "../errors";
 import type { InventoryMovementRepository, ProductRepository } from "../repositories";
 import { Product, InventoryMovement } from "../entities";
 import { newId } from "./id";
-import { DEFAULT_PROVIDER_ID } from "../../shared/constants/constants";
+import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "../../shared/constants/constants";
 
 export class ProductService {
   constructor(
@@ -26,6 +26,7 @@ export class ProductService {
   async createProduct(input: {
     sku: string;
     name: string;
+    typeId?: string;
     price: number;
     stock?: number;
     providerId?: string;
@@ -33,11 +34,13 @@ export class ProductService {
   }): Promise<Product> {
     const sku = input.sku?.trim();
     const name = input.name?.trim();
+    const typeId = input.typeId?.trim() || DEFAULT_PRODUCT_TYPE_ID;
     const providerId = input.providerId?.trim() || DEFAULT_PROVIDER_ID;
     const stock = input.stock ?? 0;
 
     if (!sku) throw new ValidationError("sku is required");
     if (!name) throw new ValidationError("name is required");
+    if (!typeId) throw new ValidationError("typeId is required");
 
     if (typeof input.price !== "number" || !Number.isFinite(input.price) || input.price <= 0) {
       throw new ValidationError("price must be a positive number");
@@ -55,10 +58,11 @@ export class ProductService {
       id: newId(),
       sku,
       name,
+      typeId,
       price: input.price,
       stock,
       providerId,
-      image: input.image ?? "",
+      image: input.image?.trim() || "", 
     });
 
     await this.products.save(product);
@@ -70,10 +74,11 @@ export class ProductService {
     id: string;
     sku?: string;
     name?: string;
+    typeId?: string;
     price?: number;
     stock?: number;
     providerId?: string;
-    image: string;
+    image?: string;
   }): Promise<Product> {
     const id = input.id?.trim();
     if (!id) throw new ValidationError("id is required");
@@ -83,15 +88,19 @@ export class ProductService {
 
     const sku = input.sku !== undefined ? input.sku.trim() : existing.sku;
     const name = input.name !== undefined ? input.name.trim() : existing.name;
+    const typeId = input.typeId !== undefined
+      ? input.typeId.trim() || DEFAULT_PRODUCT_TYPE_ID
+      : existing.typeId;
     const providerId = input.providerId !== undefined
       ? input.providerId.trim() || DEFAULT_PROVIDER_ID
       : existing.providerId;
     const image = input.image !== undefined
-      ? input.image
+      ? input.image.trim()
       : existing.image ?? "";
 
     if (!sku) throw new ValidationError("sku is required");
     if (!name) throw new ValidationError("name is required");
+    if (!typeId) throw new ValidationError("typeId is required");
 
     if (input.price !== undefined) {
       if (typeof input.price !== "number" || !Number.isFinite(input.price) || input.price <= 0) {
@@ -116,6 +125,7 @@ export class ProductService {
       id: existing.id,
       sku,
       name,
+      typeId,
       price: input.price ?? existing.price,
       stock: input.stock ?? existing.stock,
       providerId,

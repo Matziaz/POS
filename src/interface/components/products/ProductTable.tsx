@@ -89,6 +89,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
             <TableHead>SKU</TableHead>
             <TableHead>Imagen</TableHead>
             <TableHead>Nombre</TableHead>
+            <TableHead>Tipo</TableHead>
             <TableHead className="text-right">Precio</TableHead>
             <TableHead className="text-center">Stock</TableHead>
             <TableHead>Proveedor</TableHead>
@@ -104,6 +105,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 <img src={product.image} className="h-10 w-10 object-cover rounded-md"/>
               </TableCell>
               <TableCell className="font-medium">{product.name}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">{product.typeId}</TableCell>
               <TableCell className="text-right">{formatPrice(product.price)}</TableCell>
               <TableCell className="text-center">
                 <StockBadge stock={product.stock} />

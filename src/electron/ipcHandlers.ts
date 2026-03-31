@@ -40,6 +40,7 @@ interface ProductJSON {
   id: string;
   sku: string;
   name: string;
+  typeId: string;
   price: number;
   stock: number;
   providerId: string;
@@ -90,7 +91,12 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("product:save", async (_event, data: ProductJSON) => {
-    await productRepository.save(Product.create(data));
+    await productRepository.save(
+      Product.create({
+        ...data,
+        typeId: typeof data.typeId === "string" && data.typeId.trim() ? data.typeId : "1",
+      })
+    );
   });
 
   ipcMain.handle("product:delete", async (_event, id: string) => {
