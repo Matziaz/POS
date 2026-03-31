@@ -10,6 +10,7 @@ interface TicketSummaryProps {
   onIncrement: (sku: string) => void
   onDecrement: (sku: string) => void
   onRemove: (sku: string) => void
+  onClearAll: () => void
   onCheckout: () => void
 }
 
@@ -19,6 +20,7 @@ export const TicketSummary: React.FC<TicketSummaryProps> = ({
   onIncrement,
   onDecrement,
   onRemove,
+  onClearAll,
   onCheckout,
 }) => {
   const totalItems = lines.reduce((acc, line) => acc + line.qty, 0)
@@ -27,10 +29,26 @@ export const TicketSummary: React.FC<TicketSummaryProps> = ({
   return (
     <aside className="flex h-full flex-col rounded-xl border bg-card">
       <div className="border-b px-4 py-3">
-        <h2 className="text-base font-semibold">Ticket actual</h2>
-        <p className="text-sm text-muted-foreground">
-          {totalItems} articulo{totalItems === 1 ? "" : "s"}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold">Ticket actual</h2>
+            <p className="text-sm text-muted-foreground">
+              {totalItems} articulo{totalItems === 1 ? "" : "s"}
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={lines.length === 0 || isSubmitting}
+            onClick={onClearAll}
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            Vaciar
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
