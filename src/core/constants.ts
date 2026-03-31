@@ -1,1 +1,1 @@
-export { DEFAULT_USER_ID, DEFAULT_PROVIDER_ID } from "../shared/constants/constants";
+export { DEFAULT_USER_ID, DEFAULT_PROVIDER_ID, DEFAULT_PRODUCT_TYPE_ID } from "../shared/constants/constants";

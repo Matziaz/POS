@@ -14,6 +14,7 @@ function toDomain(row: any): Product {
     id: row.id,
     sku: row.sku,
     name: row.name,
+    typeId: typeof row.type_id === "string" && row.type_id.trim() ? row.type_id : "1",
     price: row.price,
     stock: row.stock,
     providerId: row.provider_id,
@@ -27,27 +28,32 @@ export class PrismaProductRepository implements ProductRepository {
 
   async save(product: Product): Promise<void> {
     const p = product.toJSON();
+    const typeId = typeof p.typeId === "string" && p.typeId.trim() ? p.typeId.trim() : "1";
+    const updateData: any = {
+      name: p.name,
+      sku: p.sku,
+      type_id: typeId,
+      price: p.price,
+      stock: p.stock,
+      provider_id: p.providerId,
+      image: p.image,
+    };
+    const createData: any = {
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      type_id: typeId,
+      price: p.price,
+      stock: p.stock,
+      provider_id: p.providerId,
+      image: p.image,
+      created_at: toISOOrNow(p.createdAt),
+    };
 
     await this.db.product.upsert({
       where: { id: p.id },
-      update: {
-        name: p.name,
-        sku: p.sku,
-        price: p.price,
-        stock: p.stock,
-        provider_id: p.providerId,
-        image: p.image,
-      },
-      create: {
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        price: p.price,
-        stock: p.stock,
-        provider_id: p.providerId,
-        image: p.image,
-        created_at: toISOOrNow(p.createdAt),
-      },
+      update: updateData,
+      create: createData,
     });
   }
 
