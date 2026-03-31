@@ -7,3 +7,4 @@
 export { InventoryPage } from './InventoryPage'
 export { SalesPage } from './SalesPage'
 export { SalesTerminalPage } from './SalesTerminalPage'
+export { DashboardPage } from './DashboardPage'

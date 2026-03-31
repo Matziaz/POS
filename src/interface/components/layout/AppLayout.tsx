@@ -1,6 +1,6 @@
 import React from "react"
 import { NavLink } from "react-router-dom"
-import { Package, ShoppingCart, ScanLine } from "lucide-react"
+import { BarChart3, Package, ShoppingCart, ScanLine } from "lucide-react"
 import { cn } from "@interface/lib/utils"
 import { APP_NAME } from "@shared/constants"
 
@@ -41,6 +41,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="container mx-auto max-w-6xl flex items-center justify-between h-14 px-4">
           <span className="font-bold text-lg">{APP_NAME}</span>
           <nav className="flex items-center gap-1">
+            <NavItem
+              to="/dashboard"
+              icon={<BarChart3 className="h-4 w-4" />}
+              label="Dashboard"
+            />
             <NavItem
               to="/inventario"
               icon={<Package className="h-4 w-4" />}
