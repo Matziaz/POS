@@ -26,6 +26,36 @@ interface ProductTypeJSON {
   name: string;
 }
 
+interface ProviderJSON {
+  id: string;
+  name: string;
+  telephone: string | null;
+  email: string | null;
+  productCount: number;
+}
+
+interface ProviderCreateJSON {
+  id?: string;
+  name: string;
+  telephone?: string | null;
+  email?: string | null;
+  image?: string;
+}
+
+interface UserJSON {
+  id: string;
+  username: string;
+  roleType: string;
+  createdAt: string;
+}
+
+interface UserCreateJSON {
+  id?: string;
+  username: string;
+  password: string;
+  roleType: "ADMIN" | "CASHIER";
+}
+
 interface SaleItemJSON {
   id: string;
   saleId: string;
@@ -66,6 +96,14 @@ const electronAPI = {
     ipcRenderer.invoke("product:delete", id),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
+  providerList: (): Promise<ProviderJSON[]> =>
+    ipcRenderer.invoke("provider:list"),
+  providerSave: (data: ProviderCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("provider:save", data),
+  userList: (): Promise<UserJSON[]> =>
+    ipcRenderer.invoke("user:list"),
+  userSave: (data: UserCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("user:save", data),
 
   // Sales
   saleList: (): Promise<SaleJSON[]> =>

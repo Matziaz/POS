@@ -14,9 +14,13 @@ import path from "node:path";
 import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
+import { Provider, User } from "../core/entities";
+import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
 import { PrismaSaleRepository } from "../infrastructure/persistence/PrismaSaleRepository";
 import { PrismaInventoryMovementRepository } from "../infrastructure/persistence/PrismaInventoryMovementRepository";
+import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaProviderRepository";
+import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -33,6 +37,8 @@ const prisma = new PrismaClient({
 const productRepository = new PrismaProductRepository(prisma);
 const saleRepository = new PrismaSaleRepository(prisma);
 const inventoryMovementRepository = new PrismaInventoryMovementRepository(prisma);
+const providerRepository = new PrismaProviderRepository(prisma);
+const userRepository = new PrismaUserRepository(prisma);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -75,6 +81,36 @@ interface InventoryMovementJSON {
   type: "IN" | "OUT";
   quantity: number;
   createdAt: string;
+}
+
+interface ProviderJSON {
+  id: string;
+  name: string;
+  telephone: string | null;
+  email: string | null;
+  productCount: number;
+}
+
+interface ProviderCreateJSON {
+  id?: string;
+  name: string;
+  telephone?: string | null;
+  email?: string | null;
+  image?: string;
+}
+
+interface UserJSON {
+  id: string;
+  username: string;
+  roleType: string;
+  createdAt: string;
+}
+
+interface UserCreateJSON {
+  id?: string;
+  username: string;
+  password: string;
+  roleType: "ADMIN" | "CASHIER";
 }
 
 // ─── Product handlers ─────────────────────────────────────────────────────────
@@ -180,12 +216,90 @@ function registerInventoryMovementHandlers() {
   });
 }
 
+// ─── Contact handlers ─────────────────────────────────────────────────────────
+
+function registerContactHandlers() {
+  ipcMain.handle("provider:list", async (): Promise<ProviderJSON[]> => {
+    const providers = await providerRepository.list();
+    const ids = providers.map((provider) => provider.id);
+
+    const counts = ids.length
+      ? await prisma.product.groupBy({
+          by: ["provider_id"],
+          where: { provider_id: { in: ids } },
+          _count: { provider_id: true },
+        })
+      : [];
+
+    const countByProviderId = new Map<string, number>(
+      counts.map((row) => [row.provider_id, row._count.provider_id])
+    );
+
+    return providers.map((provider) => ({
+      id: provider.id,
+      name: provider.name,
+      telephone: provider.telephone,
+      email: provider.email,
+      productCount: countByProviderId.get(provider.id) ?? 0,
+    }));
+  });
+
+  ipcMain.handle("provider:save", async (_event, data: ProviderCreateJSON): Promise<void> => {
+    await providerRepository.save(
+      Provider.create({
+        id: data.id?.trim() || newId(),
+        name: data.name,
+        telephone: data.telephone ?? null,
+        email: data.email ?? null,
+        image: data.image?.trim() || "",
+      })
+    );
+  });
+
+  ipcMain.handle("user:list", async (): Promise<UserJSON[]> => {
+    const users = await userRepository.list();
+    const roleIds = [...new Set(users.map((user) => user.roleId))];
+    const roles = roleIds.length
+      ? await prisma.role.findMany({ where: { id: { in: roleIds } } })
+      : [];
+    const roleTypeById = new Map<string, string>(
+      roles.map((role) => [role.id, role.type])
+    );
+
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      roleType: roleTypeById.get(user.roleId) ?? "CASHIER",
+      createdAt: user.createdAt,
+    }));
+  });
+
+  ipcMain.handle("user:save", async (_event, data: UserCreateJSON): Promise<void> => {
+    const normalizedRoleType = data.roleType.trim().toUpperCase();
+    const role = await prisma.role.findFirst({ where: { type: normalizedRoleType } });
+
+    if (!role) {
+      throw new Error(`No existe un rol valido para ${normalizedRoleType}`);
+    }
+
+    await userRepository.save(
+      User.create({
+        id: data.id?.trim() || newId(),
+        username: data.username,
+        password: data.password,
+        roleId: role.id,
+      })
+    );
+  });
+}
+
 // ─── Register all ─────────────────────────────────────────────────────────────
 
 export function registerAllIpcHandlers() {
   registerProductHandlers();
   registerSaleHandlers();
   registerInventoryMovementHandlers();
+  registerContactHandlers();
 
   console.log("[IPC] All database handlers registered");
 }

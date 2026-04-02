@@ -8,3 +8,5 @@
 export * from "./ProductRepository";
 export * from "./SaleRepository";
 export * from "./InventoryMovementRepository";
+export * from "./ProviderRepository";
+export * from "./UserRepository";
