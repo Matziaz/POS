@@ -21,6 +21,11 @@ Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyec
    - Comandos utiles
    - Problemas comunes y como resolverlos
 
+4. **[THEMING_GUIDE.md](./guides/THEMING_GUIDE.md)** (15 min) — Como construir componentes compatibles con claro y oscuro
+   - Uso correcto de variables CSS y clases semanticas
+   - Patrones para nuevos componentes
+   - Checklist rapido antes de merge
+
 ## Por Donde Empezar
 
 **Paso 1 — Solo si nunca trabajaste con desarrollo web:**
@@ -31,6 +36,9 @@ Lee [QUICKSTART.md](./guides/QUICKSTART.md). Cubre el setup completo, la arquite
 
 **Paso 3 — Durante el proyecto:**
 Consulta [DEVELOPMENT.md](./guides/DEVELOPMENT.md) cuando necesites recordar convenciones o comandos.
+
+**Paso 4 — Cuando agregues componentes nuevos:**
+Lee [THEMING_GUIDE.md](./guides/THEMING_GUIDE.md) antes de tocar estilos. Te dice como usar el sistema de tema sin romper compatibilidad con modo oscuro.
 
 ## Referencias Rapidas
 

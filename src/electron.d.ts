@@ -15,6 +15,11 @@ interface ProductJSON {
   createdAt: string
 }
 
+interface ProductTypeJSON {
+  id: string
+  name: string
+}
+
 interface SaleItemJSON {
   id: string
   saleId: string
@@ -46,6 +51,7 @@ interface ElectronAPI {
   productFindBySku(sku: string): Promise<ProductJSON | null>
   productSave(data: ProductJSON): Promise<void>
   productDelete(id: string): Promise<void>
+  productTypeList(): Promise<ProductTypeJSON[]>
 
   // Sales
   saleList(): Promise<SaleJSON[]>

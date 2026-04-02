@@ -13,11 +13,17 @@ interface ProductJSON {
   id: string;
   sku: string;
   name: string;
+  typeId: string;
   price: number;
   stock: number;
   providerId: string;
   image: string;
   createdAt: string;
+}
+
+interface ProductTypeJSON {
+  id: string;
+  name: string;
 }
 
 interface SaleItemJSON {
@@ -58,6 +64,8 @@ const electronAPI = {
     ipcRenderer.invoke("product:save", data),
   productDelete: (id: string): Promise<void> =>
     ipcRenderer.invoke("product:delete", id),
+  productTypeList: (): Promise<ProductTypeJSON[]> =>
+    ipcRenderer.invoke("productType:list"),
 
   // Sales
   saleList: (): Promise<SaleJSON[]> =>

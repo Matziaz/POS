@@ -48,6 +48,11 @@ interface ProductJSON {
   createdAt: string;
 }
 
+interface ProductTypeJSON {
+  id: string;
+  name: string;
+}
+
 interface SaleItemJSON {
   id: string;
   saleId: string;
@@ -116,6 +121,19 @@ function registerProductHandlers() {
       await tx.inventory_movement.deleteMany({ where: { product_id: id } });
       await tx.product.delete({ where: { id } });
     });
+  });
+
+  ipcMain.handle("productType:list", async (): Promise<ProductTypeJSON[]> => {
+    const rows = await prisma.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
+      'SELECT id, name FROM product_type WHERE id IS NOT NULL ORDER BY name ASC'
+    );
+
+    return rows
+      .filter((row) => typeof row.id === "string" && row.id.trim().length > 0)
+      .map((row) => ({
+        id: row.id as string,
+        name: row.name,
+      }));
   });
 }
 
