@@ -1,7 +1,6 @@
 import React from "react"
-import { Clock3, IdCard, MessageSquare, Phone } from "lucide-react"
+import { Clock3, IdCard} from "lucide-react"
 import type { StaffContactView } from "@interface/store/contactStore"
-import { Button } from "@interface/components/ui/button"
 import { ContactStatus } from "./ContactStatus"
 
 interface StaffContactCardProps {

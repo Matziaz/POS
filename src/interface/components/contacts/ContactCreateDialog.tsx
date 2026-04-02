@@ -100,7 +100,7 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
           <DialogHeader>
             <DialogTitle>Nuevo Contacto</DialogTitle>
             <DialogDescription>
-              Registra un proveedor o integrante del staff usando datos reales de la base de datos.
+              Registra un proveedor o integrante del staff.
             </DialogDescription>
           </DialogHeader>
 

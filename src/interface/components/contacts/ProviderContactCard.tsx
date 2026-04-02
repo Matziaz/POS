@@ -1,7 +1,6 @@
 import React from "react"
-import { MessageSquare, Phone, Mail } from "lucide-react"
+import { Phone, Mail } from "lucide-react"
 import type { ProviderContactView } from "@interface/store/contactStore"
-import { Button } from "@interface/components/ui/button"
 import { ContactStatus } from "./ContactStatus"
 
 interface ProviderContactCardProps {
