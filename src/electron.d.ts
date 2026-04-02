@@ -86,7 +86,7 @@ interface ElectronAPI {
   providerSave(data: ProviderCreateJSON): Promise<void>
   userList(): Promise<UserJSON[]>
   userSave(data: UserCreateJSON): Promise<void>
-
+  
   // Sales
   saleList(): Promise<SaleJSON[]>
   saleFindById(id: string): Promise<SaleJSON | null>
