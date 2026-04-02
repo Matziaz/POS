@@ -9,12 +9,14 @@ interface NavItemProps {
   to: string
   icon: React.ReactNode
   label: string
+  end?: boolean
   collapsed?: boolean
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, collapsed = false }) => (
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, end = false, collapsed = false }) => (
   <NavLink
     to={to}
+    end={end}
     className={({ isActive }) =>
       cn(
         "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
@@ -83,6 +85,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   to={item.to}
                   icon={<Icon className="h-4 w-4" />}
                   label={item.label}
+                  end={item.end}
                   collapsed={!isSidebarOpen}
                 />
               )

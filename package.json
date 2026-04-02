@@ -10,11 +10,12 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "concurrently \"npm run electron:dev\" \"npm run react-dev\"",
+    "dev": "concurrently \"npm run electron:dev\" \"npm run react-dev\" \"npm run electron:run-dev\"",
     "react-dev": "vite",
     "electron": "electron .",
     "electron:prepare-dist": "node scripts/ensure-dist-commonjs.cjs",
     "electron:dev": "npm run electron:prepare-dist && tsc --project tsconfig.electron.json --watch",
+    "electron:run-dev": "wait-on tcp:3000 dist/electron/main.js && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 electron .",
     "build": "vite build && tsc --project tsconfig.electron.json && npm run electron:prepare-dist",
     "build:electron": "electron-builder",
     "preview": "vite preview",
