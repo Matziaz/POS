@@ -1,1 +1,7 @@
 export { ContactsDirectory } from "./ContactsDirectory.tsx"
+export { ContactsFilters } from "./ContactsFilters.tsx"
+export { ContactsEmptyState } from "./ContactsEmptyState.tsx"
+export { ProviderContactCard } from "./ProviderContactCard.tsx"
+export { StaffContactCard } from "./StaffContactCard.tsx"
+export { ContactStatus } from "./ContactStatus.tsx"
+export { ContactCreateDialog } from "./ContactCreateDialog.tsx"

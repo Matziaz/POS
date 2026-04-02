@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useContactStore } from "@interface/store/contactStore"
-import type { ContactView } from "@interface/store/contactStore"
+import type { ContactView, CreateContactInput } from "@interface/store/contactStore"
 
 export interface UseContactsReturn {
   contacts: ContactView[]
@@ -8,6 +8,7 @@ export interface UseContactsReturn {
   error: string | null
   clearError: () => void
   refetch: () => Promise<void>
+  createContact: (input: CreateContactInput) => Promise<void>
 }
 
 export function useContacts(): UseContactsReturn {
@@ -24,5 +25,6 @@ export function useContacts(): UseContactsReturn {
     error: store.error,
     clearError: store.clearError,
     refetch: store.fetchContacts,
+    createContact: store.createContact,
   }
 }

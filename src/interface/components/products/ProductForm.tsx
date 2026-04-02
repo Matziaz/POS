@@ -12,11 +12,23 @@ import {
 import { Button } from "@interface/components/ui/button"
 import { Input } from "@interface/components/ui/input"
 import { Label } from "@interface/components/ui/label"
-import { DEFAULT_PRODUCT_IMAGE } from "@/shared/constants/constants"
+import { DEFAULT_PRODUCT_IMAGE } from "@shared/constants/constants"
+
+export interface ProductTypeOption {
+  id: string
+  name: string
+}
+
+export interface ProviderOption {
+  id: string
+  name: string
+}
 
 interface ProductFormProps {
   open: boolean
   product: ProductProps | null  // null = crear, ProductProps = editar
+  productTypes: ProductTypeOption[]
+  providers: ProviderOption[]
   onClose: () => void
   onSubmit: (data: ProductFormData) => Promise<void>
 }
@@ -79,6 +91,8 @@ function validate(data: ProductFormData): FormErrors {
 export const ProductForm: React.FC<ProductFormProps> = ({
   open,
   product,
+  productTypes,
+  providers,
   onClose,
   onSubmit,
 }) => {
@@ -87,6 +101,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [imagePreviewError, setImagePreviewError] = useState(false)
+
+  const canSubmit =
+    form.sku.trim().length > 0 &&
+    form.name.trim().length > 0 &&
+    form.typeId.trim().length > 0 &&
+    form.providerId.trim().length > 0 &&
+    form.price > 0 &&
+    Number.isInteger(form.stock) &&
+    form.stock >= 0
 
   useEffect(() => {
     if (open) {
@@ -105,6 +129,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       }
       setErrors({})
       setSubmitError(null)
+      setImagePreviewError(false)
     }
   }, [open, product])
 
@@ -113,6 +138,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     // Limpiar error del campo al modificar
     if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+    if (field === "image") {
+      setImagePreviewError(false)
     }
     setSubmitError(null)
   }
@@ -203,20 +231,24 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 Tipo
               </Label>
               <div className="col-span-3">
-                <Input
+                <select
                   id="typeId"
                   value={form.typeId}
                   onChange={(e) => handleChange("typeId", e.target.value)}
-                  placeholder="Ej: 1"
                   disabled={isSubmitting}
-                  className={errors.typeId ? "border-destructive" : ""}
-                />
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    errors.typeId ? "border-destructive" : "border-input"
+                  }`}
+                >
+                  {productTypes.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.typeId && (
                   <p className="text-sm text-destructive mt-1">{errors.typeId}</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  1 = Bebida - 2 = Panaderia - 3 = Botana
-                </p>
               </div>
             </div>
 
@@ -284,6 +316,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   disabled={isSubmitting}
                   className={errors.image ? "border-destructive" : ""}
                 />
+                <div className="mt-2">
+                  <img
+                    src={!form.image || imagePreviewError ? DEFAULT_PRODUCT_IMAGE : form.image}
+                    alt="Vista previa del producto"
+                    className="h-14 w-14 rounded-md border object-cover"
+                    onError={() => setImagePreviewError(true)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -293,13 +333,19 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 Proveedor
               </Label>
               <div className="col-span-3">
-                <Input
+                <select
                   id="providerId"
                   value={form.providerId}
                   onChange={(e) => handleChange("providerId", e.target.value)}
-                  placeholder={DEFAULT_PROVIDER_ID}
                   disabled={isSubmitting}
-                />
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {providers.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -319,7 +365,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !canSubmit}>
               {isSubmitting
                 ? "Guardando..."
                 : isEditing

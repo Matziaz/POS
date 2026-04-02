@@ -16,8 +16,8 @@ export interface ProviderContactView extends ContactBaseView {
   metricLabel: string
   metricValue: string
   monthlyOrders: number
+  email: string | null
   avatarText: string
-  avatarColor: string
 }
 
 export interface StaffContactView extends ContactBaseView {
@@ -29,32 +29,51 @@ export interface StaffContactView extends ContactBaseView {
 
 export type ContactView = ProviderContactView | StaffContactView
 
+export interface CreateProviderContactInput {
+  category: "providers"
+  name: string
+  telephone?: string
+  email?: string
+}
+
+export interface CreateStaffContactInput {
+  category: "staff"
+  username: string
+  password: string
+  roleType: "ADMIN" | "CASHIER"
+}
+
+export type CreateContactInput = CreateProviderContactInput | CreateStaffContactInput
+
 interface ContactState {
   contacts: ContactView[]
   isLoading: boolean
   error: string | null
   fetchContacts: () => Promise<void>
+  createContact: (input: CreateContactInput) => Promise<void>
   clearError: () => void
 }
 
-const providerAvatarColors = [
-  "bg-red-600",
-  "bg-blue-600",
-  "bg-cyan-600",
-  "bg-amber-500",
-  "bg-emerald-600",
-]
+interface ProviderRow {
+  id: string
+  name: string
+  telephone: string | null
+  email: string | null
+  productCount: number
+}
+
+interface UserRow {
+  id: string
+  username: string
+  roleType: string
+  createdAt: string
+}
 
 function initials(input: string): string {
   const parts = input.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return "NA"
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-}
-
-function pickProviderColor(id: string): string {
-  const sum = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return providerAvatarColors[sum % providerAvatarColors.length]
 }
 
 function roleToSubtitle(roleType: string): string {
@@ -82,8 +101,8 @@ function fallbackContacts(): ContactView[] {
       metricLabel: "Telefono",
       metricValue: "555-0000",
       monthlyOrders: 0,
+      email: "proveedor@general.com",
       avatarText: "PG",
-      avatarColor: "bg-blue-600",
     },
     {
       id: "user_admin_001",
@@ -99,7 +118,7 @@ function fallbackContacts(): ContactView[] {
   ]
 }
 
-export const useContactStore = create<ContactState>((set) => ({
+export const useContactStore = create<ContactState>((set, get) => ({
   contacts: [],
   isLoading: false,
   error: null,
@@ -112,12 +131,22 @@ export const useContactStore = create<ContactState>((set) => ({
         return
       }
 
+      const api = window.electronAPI as NonNullable<typeof window.electronAPI> & {
+        providerList?: () => Promise<ProviderRow[]>
+        userList?: () => Promise<UserRow[]>
+      }
+
+      if (!api.providerList || !api.userList) {
+        set({ contacts: fallbackContacts(), isLoading: false })
+        return
+      }
+
       const [providers, users] = await Promise.all([
-        window.electronAPI.providerList(),
-        window.electronAPI.userList(),
+        api.providerList(),
+        api.userList(),
       ])
 
-      const providerContacts: ProviderContactView[] = providers.map((provider) => {
+      const providerContacts: ProviderContactView[] = providers.map((provider: ProviderRow) => {
         const contactValue = provider.telephone || provider.email || "Sin dato"
         const contactLabel = provider.telephone
           ? "Telefono"
@@ -135,12 +164,12 @@ export const useContactStore = create<ContactState>((set) => ({
           metricLabel: contactLabel,
           metricValue: contactValue,
           monthlyOrders: provider.productCount,
+          email: provider.email,
           avatarText: initials(provider.name),
-          avatarColor: pickProviderColor(provider.id),
         }
       })
 
-      const staffContacts: StaffContactView[] = users.map((user) => ({
+      const staffContacts: StaffContactView[] = users.map((user: UserRow) => ({
         id: user.id,
         category: "staff",
         name: user.username,
@@ -158,6 +187,44 @@ export const useContactStore = create<ContactState>((set) => ({
         error: err instanceof Error ? err.message : "Error al cargar contactos",
         isLoading: false,
       })
+    }
+  },
+
+  createContact: async (input) => {
+    const api = window.electronAPI
+
+    if (!api) {
+      throw new Error("La API de escritorio no esta disponible")
+    }
+
+    try {
+      if (input.category === "providers") {
+        if (!api.providerSave) {
+          throw new Error("No se encontro la operacion para guardar proveedores")
+        }
+
+        await api.providerSave({
+          name: input.name,
+          telephone: input.telephone?.trim() || null,
+          email: input.email?.trim() || null,
+        })
+      } else {
+        if (!api.userSave) {
+          throw new Error("No se encontro la operacion para guardar usuarios")
+        }
+
+        await api.userSave({
+          username: input.username,
+          password: input.password,
+          roleType: input.roleType,
+        })
+      }
+
+      await get().fetchContacts()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al crear contacto"
+      set({ error: message })
+      throw err
     }
   },
 

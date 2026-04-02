@@ -1,10 +1,15 @@
-import React from "react"
-import { ContactsDirectory } from "@interface/components/contacts"
+import React, { useState } from "react"
+import { ContactCreateDialog, ContactsDirectory } from "@interface/components/contacts"
 import { Button } from "@interface/components/ui/button"
 import { useContacts } from "@interface/hooks/useContacts"
 
 export const ContactsPage: React.FC = () => {
-  const { contacts, isLoading, error, clearError, refetch } = useContacts()
+  const { contacts, isLoading, error, clearError, refetch, createContact } = useContacts()
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+
+  const handleCreateContact = async (...args: Parameters<typeof createContact>) => {
+    await createContact(...args)
+  }
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -29,7 +34,17 @@ export const ContactsPage: React.FC = () => {
         </div>
       )}
 
-      <ContactsDirectory contacts={contacts} isLoading={isLoading} />
+      <ContactsDirectory
+        contacts={contacts}
+        isLoading={isLoading}
+        onCreate={() => setIsCreateOpen(true)}
+      />
+
+      <ContactCreateDialog
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSubmit={handleCreateContact}
+      />
     </div>
   )
 }

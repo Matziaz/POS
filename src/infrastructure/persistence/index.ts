@@ -13,3 +13,5 @@ export * from "./SQLiteProductRepository";
 export * from "./SQLiteSaleRepository";
 export * from "./SQLiteInventoryRepository";
 export * from "./PrismaProductRepository";
+export * from "./PrismaProviderRepository";
+export * from "./PrismaUserRepository";
