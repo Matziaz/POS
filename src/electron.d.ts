@@ -36,6 +36,14 @@ interface ProviderCreateJSON {
   image?: string
 }
 
+interface ProviderUpdateJSON {
+  id: string
+  name: string
+  telephone?: string | null
+  email?: string | null
+  image?: string
+}
+
 interface UserJSON {
   id: string
   username: string
@@ -47,6 +55,13 @@ interface UserCreateJSON {
   id?: string
   username: string
   password: string
+  roleType: "ADMIN" | "CASHIER"
+}
+
+interface UserUpdateJSON {
+  id: string
+  username: string
+  password?: string
   roleType: "ADMIN" | "CASHIER"
 }
 
@@ -84,8 +99,12 @@ interface ElectronAPI {
   productTypeList(): Promise<ProductTypeJSON[]>
   providerList(): Promise<ProviderJSON[]>
   providerSave(data: ProviderCreateJSON): Promise<void>
+  providerUpdate(data: ProviderUpdateJSON): Promise<void>
+  providerDelete(id: string): Promise<void>
   userList(): Promise<UserJSON[]>
   userSave(data: UserCreateJSON): Promise<void>
+  userUpdate(data: UserUpdateJSON): Promise<void>
+  userDelete(id: string): Promise<void>
   
   // Sales
   saleList(): Promise<SaleJSON[]>

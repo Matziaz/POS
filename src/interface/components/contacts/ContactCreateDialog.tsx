@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -10,20 +10,26 @@ import {
 import { Button } from "@interface/components/ui/button"
 import { Input } from "@interface/components/ui/input"
 import { Label } from "@interface/components/ui/label"
-import type { CreateContactInput } from "@interface/store/contactStore"
+import type { CreateContactInput, UpdateContactInput } from "@interface/store/contactStore"
 
 type ContactKind = "providers" | "staff"
 
 interface ContactCreateDialogProps {
   open: boolean
+  mode?: "create" | "edit"
+  initialData?: UpdateContactInput | null
   onClose: () => void
-  onSubmit: (input: CreateContactInput) => Promise<void>
+  onCreate: (input: CreateContactInput) => Promise<void>
+  onUpdate?: (input: UpdateContactInput) => Promise<void>
 }
 
 export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
   open,
+  mode = "create",
+  initialData,
   onClose,
-  onSubmit,
+  onCreate,
+  onUpdate,
 }) => {
   const [kind, setKind] = useState<ContactKind>("providers")
   const [name, setName] = useState("")
@@ -35,13 +41,43 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  useEffect(() => {
+    if (!open) return
+
+    if (mode === "edit" && initialData) {
+      setKind(initialData.category)
+
+      if (initialData.category === "providers") {
+        setName(initialData.name)
+        setTelephone(initialData.telephone ?? "")
+        setEmail(initialData.email ?? "")
+        setUsername("")
+        setPassword("")
+        setRoleType("CASHIER")
+      } else {
+        setUsername(initialData.username)
+        setRoleType(initialData.roleType)
+        setPassword("")
+        setName("")
+        setTelephone("")
+        setEmail("")
+      }
+    } else if (mode === "create") {
+      resetForm()
+    }
+  }, [open, mode, initialData])
+
   const canSubmit = useMemo(() => {
     if (kind === "providers") {
       return name.trim().length > 0
     }
 
+    if (mode === "edit") {
+      return username.trim().length > 0 && (password.trim().length === 0 || password.trim().length >= 4)
+    }
+
     return username.trim().length > 0 && password.trim().length >= 4
-  }, [kind, name, username, password])
+  }, [kind, name, username, password, mode])
 
   const resetForm = () => {
     setKind("providers")
@@ -69,15 +105,37 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
     setSubmitError(null)
 
     try {
-      if (kind === "providers") {
-        await onSubmit({
+      if (mode === "edit" && initialData) {
+        if (!onUpdate) {
+          throw new Error("No se encontro la operacion para editar")
+        }
+
+        if (initialData.category === "providers") {
+          await onUpdate({
+            category: "providers",
+            id: initialData.id,
+            name: name.trim(),
+            telephone: telephone.trim() || undefined,
+            email: email.trim() || undefined,
+          })
+        } else {
+          await onUpdate({
+            category: "staff",
+            id: initialData.id,
+            username: username.trim(),
+            password: password.trim() || undefined,
+            roleType,
+          })
+        }
+      } else if (kind === "providers") {
+        await onCreate({
           category: "providers",
           name: name.trim(),
           telephone: telephone.trim() || undefined,
           email: email.trim() || undefined,
         })
       } else {
-        await onSubmit({
+        await onCreate({
           category: "staff",
           username: username.trim(),
           password,
@@ -87,7 +145,13 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
 
       handleClose()
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "No se pudo crear el contacto")
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : mode === "edit"
+            ? "No se pudo actualizar el contacto"
+            : "No se pudo crear el contacto"
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -98,9 +162,11 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
       <DialogContent className="sm:max-w-[520px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Nuevo Contacto</DialogTitle>
+            <DialogTitle>{mode === "edit" ? "Editar Contacto" : "Nuevo Contacto"}</DialogTitle>
             <DialogDescription>
-              Registra un proveedor o integrante del staff.
+              {mode === "edit"
+                ? "Actualiza la informacion de un proveedor o integrante del staff."
+                : "Registra un proveedor o integrante del staff."}
             </DialogDescription>
           </DialogHeader>
 
@@ -111,7 +177,7 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
                 id="contact-kind"
                 value={kind}
                 onChange={(event) => setKind(event.target.value as ContactKind)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || mode === "edit"}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <option value="providers">Proveedor</option>
@@ -178,7 +244,7 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Minimo 4 caracteres"
+                      placeholder={mode === "edit" ? "Dejar vacio para mantener password" : "Minimo 4 caracteres"}
                       disabled={isSubmitting}
                     />
                   </div>
@@ -212,7 +278,13 @@ export const ContactCreateDialog: React.FC<ContactCreateDialogProps> = ({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting || !canSubmit}>
-              {isSubmitting ? "Guardando..." : "Guardar contacto"}
+              {isSubmitting
+                ? mode === "edit"
+                  ? "Actualizando..."
+                  : "Guardando..."
+                : mode === "edit"
+                  ? "Guardar cambios"
+                  : "Guardar contacto"}
             </Button>
           </DialogFooter>
         </form>

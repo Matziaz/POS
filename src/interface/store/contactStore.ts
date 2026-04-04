@@ -45,12 +45,37 @@ export interface CreateStaffContactInput {
 
 export type CreateContactInput = CreateProviderContactInput | CreateStaffContactInput
 
+export interface UpdateProviderContactInput {
+  category: "providers"
+  id: string
+  name: string
+  telephone?: string
+  email?: string
+}
+
+export interface UpdateStaffContactInput {
+  category: "staff"
+  id: string
+  username: string
+  password?: string
+  roleType: "ADMIN" | "CASHIER"
+}
+
+export type UpdateContactInput = UpdateProviderContactInput | UpdateStaffContactInput
+
+export interface DeleteContactInput {
+  id: string
+  category: ContactCategory
+}
+
 interface ContactState {
   contacts: ContactView[]
   isLoading: boolean
   error: string | null
   fetchContacts: () => Promise<void>
   createContact: (input: CreateContactInput) => Promise<void>
+  updateContact: (input: UpdateContactInput) => Promise<void>
+  deleteContact: (input: DeleteContactInput) => Promise<void>
   clearError: () => void
 }
 
@@ -223,6 +248,76 @@ export const useContactStore = create<ContactState>((set, get) => ({
       await get().fetchContacts()
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al crear contacto"
+      set({ error: message })
+      throw err
+    }
+  },
+
+  updateContact: async (input) => {
+    const api = window.electronAPI
+
+    if (!api) {
+      throw new Error("La API de escritorio no esta disponible")
+    }
+
+    try {
+      if (input.category === "providers") {
+        if (!api.providerUpdate) {
+          throw new Error("No se encontro la operacion para actualizar proveedores")
+        }
+
+        await api.providerUpdate({
+          id: input.id,
+          name: input.name,
+          telephone: input.telephone?.trim() || null,
+          email: input.email?.trim() || null,
+        })
+      } else {
+        if (!api.userUpdate) {
+          throw new Error("No se encontro la operacion para actualizar usuarios")
+        }
+
+        await api.userUpdate({
+          id: input.id,
+          username: input.username,
+          password: input.password?.trim() || undefined,
+          roleType: input.roleType,
+        })
+      }
+
+      await get().fetchContacts()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al actualizar contacto"
+      set({ error: message })
+      throw err
+    }
+  },
+
+  deleteContact: async (input) => {
+    const api = window.electronAPI
+
+    if (!api) {
+      throw new Error("La API de escritorio no esta disponible")
+    }
+
+    try {
+      if (input.category === "providers") {
+        if (!api.providerDelete) {
+          throw new Error("No se encontro la operacion para eliminar proveedores")
+        }
+
+        await api.providerDelete(input.id)
+      } else {
+        if (!api.userDelete) {
+          throw new Error("No se encontro la operacion para eliminar usuarios")
+        }
+
+        await api.userDelete(input.id)
+      }
+
+      await get().fetchContacts()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al eliminar contacto"
       set({ error: message })
       throw err
     }
