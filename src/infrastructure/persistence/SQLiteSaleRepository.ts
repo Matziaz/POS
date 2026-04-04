@@ -76,6 +76,34 @@ export class SQLiteSaleRepository implements SaleRepository {
         return results.map(p => this.toDomain(p));
     }
 
+    async findByDateRange(from: Date, to: Date): Promise<Sale[]> {
+        const fromISO = from.toISOString();
+        const toISO = to.toISOString();
+
+        const results = await prisma.sale.findMany({
+            where: {
+                created_at: {
+                    gte: fromISO,
+                    lt: toISO,
+                },
+            },
+            include: { sale_item: true },
+            orderBy: { created_at: "desc" },
+        });
+
+        return results.map((sale) => this.toDomain(sale));
+    }
+
+    async sumTotalByDateRange(from: Date, to: Date): Promise<number> {
+        const sales = await this.findByDateRange(from, to);
+        return sales.reduce((sum, sale) => sum + sale.total, 0);
+    }
+
+    async countByDateRange(from: Date, to: Date): Promise<number> {
+        const sales = await this.findByDateRange(from, to);
+        return sales.length;
+    }
+
 
     /**
      * Convierte Prisma → Domain Entity

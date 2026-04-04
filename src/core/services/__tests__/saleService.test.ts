@@ -44,10 +44,28 @@ function inMemoryProductRepo(seed: Product[] = []): ProductRepository {
 
 function inMemorySaleRepo(): SaleRepository {
   const byId = new Map<string, Sale>();
+  const findInRange = (from: Date, to: Date): Sale[] => {
+    const fromMs = from.getTime();
+    const toMs = to.getTime();
+    return [...byId.values()].filter((sale) => {
+      const createdAt = new Date(sale.createdAt).getTime();
+      return createdAt >= fromMs && createdAt < toMs;
+    });
+  };
+
   return {
     async save(s) { byId.set(s.id, s); },
     async findById(id) { return byId.get(id) ?? null; },
     async list() { return [...byId.values()]; },
+    async findByDateRange(from, to) { return findInRange(from, to); },
+    async sumTotalByDateRange(from, to) {
+      const sales = findInRange(from, to);
+      return sales.reduce((sum, sale) => sum + sale.total, 0);
+    },
+    async countByDateRange(from, to) {
+      const sales = findInRange(from, to);
+      return sales.length;
+    },
   };
 }
 

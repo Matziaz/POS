@@ -89,6 +89,9 @@ interface ElectronAPI {
   
   // Sales
   saleList(): Promise<SaleJSON[]>
+  saleListByDateRange(fromISO: string, toISO: string): Promise<SaleJSON[]>
+  saleSumByDateRange(fromISO: string, toISO: string): Promise<number>
+  saleCountByDateRange(fromISO: string, toISO: string): Promise<number>
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
 

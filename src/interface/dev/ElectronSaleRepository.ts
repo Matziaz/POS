@@ -53,4 +53,29 @@ export class ElectronSaleRepository implements SaleRepository {
       })
     )
   }
+
+  async findByDateRange(from: Date, to: Date): Promise<Sale[]> {
+    const rows = await getAPI().saleListByDateRange(from.toISOString(), to.toISOString())
+    return rows.map((json: any) =>
+      Sale.create({
+        id: json.id,
+        userId: json.userId,
+        createdAt: json.createdAt,
+        items: json.items.map((item: any) => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      })
+    )
+  }
+
+  async sumTotalByDateRange(from: Date, to: Date): Promise<number> {
+    return getAPI().saleSumByDateRange(from.toISOString(), to.toISOString())
+  }
+
+  async countByDateRange(from: Date, to: Date): Promise<number> {
+    return getAPI().saleCountByDateRange(from.toISOString(), to.toISOString())
+  }
 }
