@@ -37,6 +37,24 @@ export class PrismaProviderRepository implements ProviderRepository {
     });
   }
 
+  async update(provider: Provider): Promise<void> {
+    const p = provider.toJSON();
+
+    await this.db.provider.update({
+      where: { id: p.id },
+      data: {
+        name: p.name,
+        telephone: p.telephone ?? null,
+        email: p.email ?? null,
+        image: p.image || null,
+      },
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.provider.delete({ where: { id } });
+  }
+
   async findById(id: string): Promise<Provider | null> {
     const row = await this.db.provider.findUnique({ where: { id } });
     return row ? toDomain(row) : null;

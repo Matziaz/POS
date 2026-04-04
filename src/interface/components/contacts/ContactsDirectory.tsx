@@ -10,9 +10,17 @@ interface ContactsDirectoryProps {
   contacts: ContactView[]
   isLoading?: boolean
   onCreate: () => void
+  onEdit: (contact: ContactView) => void
+  onDelete: (contact: ContactView) => void
 }
 
-export const ContactsDirectory: React.FC<ContactsDirectoryProps> = ({ contacts, isLoading = false, onCreate }) => {
+export const ContactsDirectory: React.FC<ContactsDirectoryProps> = ({
+  contacts,
+  isLoading = false,
+  onCreate,
+  onEdit,
+  onDelete,
+}) => {
   const [activeTab, setActiveTab] = useState<ContactTab>("all")
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -48,9 +56,19 @@ export const ContactsDirectory: React.FC<ContactsDirectoryProps> = ({ contacts, 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredContacts.map((contact) =>
             contact.category === "providers" ? (
-              <ProviderContactCard key={contact.id} contact={contact} />
+              <ProviderContactCard
+                key={contact.id}
+                contact={contact}
+                onEdit={() => onEdit(contact)}
+                onDelete={() => onDelete(contact)}
+              />
             ) : (
-              <StaffContactCard key={contact.id} contact={contact} />
+              <StaffContactCard
+                key={contact.id}
+                contact={contact}
+                onEdit={() => onEdit(contact)}
+                onDelete={() => onDelete(contact)}
+              />
             )
           )}
         </div>

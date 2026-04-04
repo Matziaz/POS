@@ -99,6 +99,14 @@ interface ProviderCreateJSON {
   image?: string;
 }
 
+interface ProviderUpdateJSON {
+  id: string;
+  name: string;
+  telephone?: string | null;
+  email?: string | null;
+  image?: string;
+}
+
 interface UserJSON {
   id: string;
   username: string;
@@ -110,6 +118,13 @@ interface UserCreateJSON {
   id?: string;
   username: string;
   password: string;
+  roleType: "ADMIN" | "CASHIER";
+}
+
+interface UserUpdateJSON {
+  id: string;
+  username: string;
+  password?: string;
   roleType: "ADMIN" | "CASHIER";
 }
 
@@ -256,6 +271,34 @@ function registerContactHandlers() {
     );
   });
 
+  ipcMain.handle("provider:update", async (_event, data: ProviderUpdateJSON): Promise<void> => {
+    const existingProvider = await providerRepository.findById(data.id);
+
+    if (!existingProvider) {
+      throw new Error("No se encontro el proveedor a actualizar");
+    }
+
+    await providerRepository.update(
+      Provider.create({
+        id: data.id,
+        name: data.name,
+        telephone: data.telephone ?? null,
+        email: data.email ?? null,
+        image: data.image?.trim() || existingProvider.image,
+      })
+    );
+  });
+
+  ipcMain.handle("provider:delete", async (_event, id: string): Promise<void> => {
+    const productsCount = await prisma.product.count({ where: { provider_id: id } });
+
+    if (productsCount > 0) {
+      throw new Error(`No se puede eliminar el proveedor; tiene ${productsCount} producto(s) asociado(s)`);
+    }
+
+    await providerRepository.delete(id);
+  });
+
   ipcMain.handle("user:list", async (): Promise<UserJSON[]> => {
     const users = await userRepository.list();
     const roleIds = [...new Set(users.map((user) => user.roleId))];
@@ -290,6 +333,41 @@ function registerContactHandlers() {
         roleId: role.id,
       })
     );
+  });
+
+  ipcMain.handle("user:update", async (_event, data: UserUpdateJSON): Promise<void> => {
+    const normalizedRoleType = data.roleType.trim().toUpperCase();
+    const role = await prisma.role.findFirst({ where: { type: normalizedRoleType } });
+
+    if (!role) {
+      throw new Error(`No existe un rol valido para ${normalizedRoleType}`);
+    }
+
+    const existingUser = await userRepository.findById(data.id);
+
+    if (!existingUser) {
+      throw new Error("No se encontro el usuario a actualizar");
+    }
+
+    await userRepository.update(
+      User.create({
+        id: data.id,
+        username: data.username,
+        password: data.password?.trim() || existingUser.password,
+        roleId: role.id,
+        createdAt: existingUser.createdAt,
+      })
+    );
+  });
+
+  ipcMain.handle("user:delete", async (_event, id: string): Promise<void> => {
+    const salesCount = await prisma.sale.count({ where: { user_id: id } });
+
+    if (salesCount > 0) {
+      throw new Error(`No se puede eliminar el usuario; tiene ${salesCount} venta(s) registrada(s)`);
+    }
+
+    await userRepository.delete(id);
   });
 }
 
