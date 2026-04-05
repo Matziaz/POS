@@ -42,6 +42,14 @@ interface ProviderCreateJSON {
   image?: string;
 }
 
+interface ProviderUpdateJSON {
+  id: string;
+  name: string;
+  telephone?: string | null;
+  email?: string | null;
+  image?: string;
+}
+
 interface UserJSON {
   id: string;
   username: string;
@@ -53,6 +61,13 @@ interface UserCreateJSON {
   id?: string;
   username: string;
   password: string;
+  roleType: "ADMIN" | "CASHIER";
+}
+
+interface UserUpdateJSON {
+  id: string;
+  username: string;
+  password?: string;
   roleType: "ADMIN" | "CASHIER";
 }
 
@@ -100,10 +115,18 @@ const electronAPI = {
     ipcRenderer.invoke("provider:list"),
   providerSave: (data: ProviderCreateJSON): Promise<void> =>
     ipcRenderer.invoke("provider:save", data),
+  providerUpdate: (data: ProviderUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("provider:update", data),
+  providerDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("provider:delete", id),
   userList: (): Promise<UserJSON[]> =>
     ipcRenderer.invoke("user:list"),
   userSave: (data: UserCreateJSON): Promise<void> =>
     ipcRenderer.invoke("user:save", data),
+  userUpdate: (data: UserUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("user:update", data),
+  userDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("user:delete", id),
 
   // Sales
   saleList: (): Promise<SaleJSON[]> =>

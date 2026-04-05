@@ -42,6 +42,23 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
+  async update(user: User): Promise<void> {
+    const u = user.toJSON();
+
+    await this.db.user.update({
+      where: { id: u.id },
+      data: {
+        username: u.username,
+        password: u.password,
+        role_id: u.roleId,
+      },
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.user.delete({ where: { id } });
+  }
+
   async findById(id: string): Promise<User | null> {
     const row = await this.db.user.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
