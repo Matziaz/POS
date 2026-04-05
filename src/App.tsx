@@ -6,6 +6,7 @@ import { SalesPage } from '@interface/pages/SalesPage'
 import { SalesTerminalPage } from '@interface/pages/SalesTerminalPage'
 import { AppLayout } from '@interface/components/layout'
 import { ContactsPage } from './interface/pages/ContactsPage'
+import { DeletedProductsPage } from './interface/pages/DeletedProductsPage'
 
 export const App: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ export const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/inventario" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/inventario" element={<InventoryPage />} />
+          <Route path="/inventario/restaurar" element={<DeletedProductsPage />} />
           <Route path="/ventas" element={<SalesPage />} />
           <Route path="/ventas/terminal" element={<SalesTerminalPage />} />
           <Route path="/contactos" element={<ContactsPage />} />

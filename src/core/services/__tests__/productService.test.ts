@@ -27,6 +27,10 @@ function inMemoryProductRepo(seed: Product[] = []): ProductRepository {
       }
     },
     async list() { return [...byId.values()]; },
+    async listDeleted() { return []; },
+    async restore() {
+      throw new Error("restore not implemented in this test repo");
+    },
   };
 }
 

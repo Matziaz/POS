@@ -19,6 +19,7 @@ interface ProductJSON {
   providerId: string;
   image: string;
   createdAt: string;
+  deletedAt: string | null;
 }
 
 interface ProductTypeJSON {
@@ -105,10 +106,14 @@ const electronAPI = {
     ipcRenderer.invoke("product:findById", id),
   productFindBySku: (sku: string): Promise<ProductJSON | null> =>
     ipcRenderer.invoke("product:findBySku", sku),
+  productListDeleted: (): Promise<ProductJSON[]> =>
+    ipcRenderer.invoke("product:listDeleted"),
   productSave: (data: ProductJSON): Promise<void> =>
     ipcRenderer.invoke("product:save", data),
   productDelete: (id: string): Promise<void> =>
     ipcRenderer.invoke("product:delete", id),
+  productRestore: (id: string, stock: number): Promise<void> =>
+    ipcRenderer.invoke("product:restore", id, stock),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
   providerList: (): Promise<ProviderJSON[]> =>

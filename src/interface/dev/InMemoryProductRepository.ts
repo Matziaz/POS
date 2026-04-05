@@ -83,22 +83,58 @@ export class InMemoryProductRepository implements ProductRepository {
   }
 
   async delete(id: string): Promise<void> {
-    this.products.delete(id)
+    const existing = this.products.get(id)
+    if (!existing) return
+
+    this.products.set(
+      id,
+      Product.create({
+        ...existing.toJSON(),
+        deletedAt: new Date().toISOString(),
+      })
+    )
   }
 
   async findById(id: string): Promise<Product | null> {
-    return this.products.get(id) ?? null
+    const product = this.products.get(id)
+    if (!product || product.deletedAt) return null
+    return product
   }
 
   async findBySku(sku: string): Promise<Product | null> {
     for (const product of this.products.values()) {
-      if (product.sku === sku) return product
+      if (product.sku === sku && !product.deletedAt) return product
     }
     return null
   }
 
   async list(): Promise<Product[]> {
-    return Array.from(this.products.values())
+    return Array.from(this.products.values()).filter((product) => !product.deletedAt)
+  }
+
+  async listDeleted(): Promise<Product[]> {
+    return Array.from(this.products.values()).filter((product) => !!product.deletedAt)
+  }
+
+  async restore(id: string, stock: number): Promise<void> {
+    const existing = this.products.get(id)
+    if (!existing) throw new Error("Product not found")
+    if (!existing.deletedAt) throw new Error("Product is not deleted")
+
+    for (const candidate of this.products.values()) {
+      if (candidate.id !== id && candidate.sku === existing.sku && !candidate.deletedAt) {
+        throw new Error(`Cannot restore product: active SKU already exists (${existing.sku})`)
+      }
+    }
+
+    this.products.set(
+      id,
+      Product.create({
+        ...existing.toJSON(),
+        stock,
+        deletedAt: null,
+      })
+    )
   }
 
   /**

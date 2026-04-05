@@ -13,6 +13,7 @@ interface ProductJSON {
   providerId: string
   image: string
   createdAt: string
+  deletedAt: string | null
 }
 
 interface ProductTypeJSON {
@@ -94,8 +95,10 @@ interface ElectronAPI {
   productList(): Promise<ProductJSON[]>
   productFindById(id: string): Promise<ProductJSON | null>
   productFindBySku(sku: string): Promise<ProductJSON | null>
+  productListDeleted(): Promise<ProductJSON[]>
   productSave(data: ProductJSON): Promise<void>
   productDelete(id: string): Promise<void>
+  productRestore(id: string, stock: number): Promise<void>
   productTypeList(): Promise<ProductTypeJSON[]>
   providerList(): Promise<ProviderJSON[]>
   providerSave(data: ProviderCreateJSON): Promise<void>

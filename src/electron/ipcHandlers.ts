@@ -52,6 +52,7 @@ interface ProductJSON {
   providerId: string;
   image: string;
   createdAt: string;
+  deletedAt: string | null;
 }
 
 interface ProductTypeJSON {
@@ -146,6 +147,11 @@ function registerProductHandlers() {
     return product ? product.toJSON() : null;
   });
 
+  ipcMain.handle("product:listDeleted", async () => {
+    const products = await productRepository.listDeleted();
+    return products.map((product) => product.toJSON());
+  });
+
   ipcMain.handle("product:save", async (_event, data: ProductJSON) => {
     await productRepository.save(
       Product.create({
@@ -156,12 +162,14 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("product:delete", async (_event, id: string) => {
-    const saleItemsCount = await prisma.sale_item.count({ where: { product_id: id } });
-    const movementsCount = await prisma.inventory_movement.count({ where: { product_id: id } });
-    if (saleItemsCount > 0 || movementsCount > 0) {
-      throw new Error(`Cannot delete product; referenced by ${saleItemsCount} sale items and ${movementsCount} inventory movements`);
-    }
     await productRepository.delete(id);
+  });
+
+  ipcMain.handle("product:restore", async (_event, id: string, stock: number) => {
+    if (!Number.isInteger(stock) || stock < 0) {
+      throw new Error("Stock must be a non-negative integer");
+    }
+    await productRepository.restore(id, stock);
   });
 
   // Force delete: elimina en transacción las dependencias y luego el producto.
@@ -241,7 +249,7 @@ function registerContactHandlers() {
     const counts = ids.length
       ? await prisma.product.groupBy({
           by: ["provider_id"],
-          where: { provider_id: { in: ids } },
+          where: { provider_id: { in: ids }, deleted_at: null },
           _count: { provider_id: true },
         })
       : [];
