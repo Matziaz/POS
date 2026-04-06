@@ -1,6 +1,7 @@
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { DashboardPage } from '@interface/pages/DashboardPage'
+import { ReportsPage } from '@interface/pages/ReportsPage'
 import { InventoryPage } from '@interface/pages/InventoryPage'
 import { SalesPage } from '@interface/pages/SalesPage'
 import { SalesTerminalPage } from '@interface/pages/SalesTerminalPage'
@@ -15,6 +16,7 @@ export const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/inventario" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/reportes" element={<ReportsPage />} />
           <Route path="/inventario" element={<InventoryPage />} />
           <Route path="/inventario/restaurar" element={<DeletedProductsPage />} />
           <Route path="/ventas" element={<SalesPage />} />

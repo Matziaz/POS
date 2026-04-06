@@ -64,4 +64,24 @@ export class InMemorySaleRepository implements SaleRepository {
   async list(): Promise<Sale[]> {
     return Array.from(this.sales.values())
   }
+
+  async findByDateRange(from: Date, to: Date): Promise<Sale[]> {
+    const fromMs = from.getTime()
+    const toMs = to.getTime()
+
+    return Array.from(this.sales.values()).filter((sale) => {
+      const createdAt = new Date(sale.createdAt).getTime()
+      return createdAt >= fromMs && createdAt < toMs
+    })
+  }
+
+  async sumTotalByDateRange(from: Date, to: Date): Promise<number> {
+    const sales = await this.findByDateRange(from, to)
+    return sales.reduce((sum, sale) => sum + sale.total, 0)
+  }
+
+  async countByDateRange(from: Date, to: Date): Promise<number> {
+    const sales = await this.findByDateRange(from, to)
+    return sales.length
+  }
 }

@@ -136,6 +136,12 @@ const electronAPI = {
   // Sales
   saleList: (): Promise<SaleJSON[]> =>
     ipcRenderer.invoke("sale:list"),
+  saleListByDateRange: (fromISO: string, toISO: string): Promise<SaleJSON[]> =>
+    ipcRenderer.invoke("sale:listByDateRange", fromISO, toISO),
+  saleSumByDateRange: (fromISO: string, toISO: string): Promise<number> =>
+    ipcRenderer.invoke("sale:sumByDateRange", fromISO, toISO),
+  saleCountByDateRange: (fromISO: string, toISO: string): Promise<number> =>
+    ipcRenderer.invoke("sale:countByDateRange", fromISO, toISO),
   saleFindById: (id: string): Promise<SaleJSON | null> =>
     ipcRenderer.invoke("sale:findById", id),
   saleSave: (data: SaleJSON): Promise<void> =>
