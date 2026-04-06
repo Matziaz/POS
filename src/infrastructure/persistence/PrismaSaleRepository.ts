@@ -19,6 +19,17 @@ function toISOOrNow(value: unknown): string {
 export class PrismaSaleRepository implements SaleRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
+  private normalizeRange(from: Date, to: Date): { fromISO: string; toISO: string } {
+    const fromISO = from.toISOString();
+    const toISO = to.toISOString();
+
+    if (new Date(fromISO).getTime() >= new Date(toISO).getTime()) {
+      throw new Error("Invalid date range: 'from' must be before 'to'");
+    }
+
+    return { fromISO, toISO };
+  }
+
   async save(sale: Sale): Promise<void> {
     const data = sale.toJSON();
 
@@ -79,5 +90,44 @@ export class PrismaSaleRepository implements SaleRepository {
         })),
       })
     );
+  }
+
+  async findByDateRange(from: Date, to: Date): Promise<Sale[]> {
+    const { fromISO, toISO } = this.normalizeRange(from, to);
+
+    const rows = await this.db.sale.findMany({
+      where: {
+        created_at: {
+          gte: fromISO,
+          lt: toISO,
+        },
+      },
+      include: { sale_item: true },
+      orderBy: { created_at: "desc" as any },
+    });
+
+    return rows.map((row) =>
+      Sale.create({
+        id: row.id,
+        userId: row.user_id,
+        createdAt: toISOOrNow(row.created_at),
+        items: row.sale_item.map((si) => ({
+          id: si.id,
+          productId: si.product_id,
+          quantity: si.quantity,
+          price: si.price,
+        })),
+      })
+    );
+  }
+
+  async sumTotalByDateRange(from: Date, to: Date): Promise<number> {
+    const sales = await this.findByDateRange(from, to);
+    return sales.reduce((sum, sale) => sum + sale.total, 0);
+  }
+
+  async countByDateRange(from: Date, to: Date): Promise<number> {
+    const sales = await this.findByDateRange(from, to);
+    return sales.length;
   }
 }

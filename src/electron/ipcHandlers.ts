@@ -196,6 +196,19 @@ function registerSaleHandlers() {
     return sales.map((sale) => sale.toJSON());
   });
 
+  ipcMain.handle("sale:listByDateRange", async (_event, fromISO: string, toISO: string) => {
+    const sales = await saleRepository.findByDateRange(new Date(fromISO), new Date(toISO));
+    return sales.map((sale) => sale.toJSON());
+  });
+
+  ipcMain.handle("sale:sumByDateRange", async (_event, fromISO: string, toISO: string) => {
+    return saleRepository.sumTotalByDateRange(new Date(fromISO), new Date(toISO));
+  });
+
+  ipcMain.handle("sale:countByDateRange", async (_event, fromISO: string, toISO: string) => {
+    return saleRepository.countByDateRange(new Date(fromISO), new Date(toISO));
+  });
+
   ipcMain.handle("sale:findById", async (_event, id: string) => {
     const sale = await saleRepository.findById(id);
     return sale ? sale.toJSON() : null;
