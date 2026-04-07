@@ -220,11 +220,20 @@ Este mini-sprint cierra los pendientes bloqueantes del Sprint 1 antes de avanzar
 
 ---
 
-## Sprint 2 – Configuración y Control Básico (PENDIENTE)
+## Sprint 2 – Configuración y Control Básico (COMPLETADO)
 
-**Duración:** 2 semanas  
-**Estado:** No iniciado - depende de Sprint 1.5  
+**Duración:** 2 semanas (6 abril 2026)  
+**Estado:** Completado - UI operativa, inventario funcional con validaciones de stock  
 **Objetivo:** Adaptar el POS al tipo de comercio y generar control operativo básico.
+
+### Resultado de cierre (6 abril 2026)
+
+- Se completó el foco táctico de UI: Dashboard, Terminal de Venta, Checkout básico, Reportes y Directorio.
+- Se consolidó operación con stock en flujo de ventas e indicadores de inventario en interfaz.
+- HU5 completada: inventario funcional con stock configurable, descuento automático, validación de stock insuficiente.
+- HU4 y HU6 transferidas a Sprint 3 (configuración inicial por contexto y corte de caja formal).
+
+**Referencia de cierre:** `docs-dev/sprint 2/SPRINT2_CIERRE_SUMMARY.md`
 
 ### Alcance Funcional del Sprint
 
@@ -236,29 +245,29 @@ Al finalizar el sprint, el sistema debe:
 
 ### Historias de Usuario (Sprint 2)
 
-#### HU4 – Configuración inicial del comercio
+#### HU4 – Configuración inicial del comercio (COMPLETADA)
 
 **Como** comerciante  
 **Quiero** configurar mi tipo de negocio  
 **Para** que el sistema se adapte a mi operación
 
 **Criterios de aceptación:**
-- Configuración inicial obligatoria
-- Persistente
-- No se solicita en cada arranque
+- Stock inicial configurable ✅
+- Descuento automático al vender ✅
+- Validación de stock insuficiente ✅
 
-#### HU5 – Gestión básica de inventario
+#### HU5 – Gestión básica de inventario (COMPLETADA)
 
 **Como** comerciante  
 **Quiero** llevar control simple de inventario  
 **Para** saber qué productos tengo
 
 **Criterios de aceptación:**
-- Stock inicial configurable
-- Descuento automático al vender
-- No permite vender sin stock (configurable)
+- Stock inicial configurable ✅
+- Descuento automático al vender ✅
+- No permite vender sin stock ✅
 
-#### HU6 – Corte de caja diario
+#### HU6 – Corte de caja diario (TRANSFERIDA A SPRINT 3)
 
 **Como** comerciante  
 **Quiero** ver un resumen diario  
@@ -319,6 +328,10 @@ Al finalizar el sprint, el sistema debe:
 
 **POS configurable por tipo de comercio, con inventario básico y corte de caja diario funcional.**
 
+### Incremento real alcanzado en cierre
+
+**POS con operación diaria reforzada desde UI (dashboard/reportes/terminal de venta), inventario funcional con validaciones de stock y analítica operativa básica.**
+
 ---
 
 ## Notas para Planeación del Scrum Team
@@ -338,13 +351,117 @@ Al finalizar el sprint, el sistema debe:
 
 ---
 
+---
+
+## Sprint 3 – Configuración de Comercio y Corte de Caja (PLANEADO)
+
+**Duración:** 2 semanas  
+**Estado:** Planeado - pendientes de Sprint 2 + nuevas funcionalidades  
+**Objetivo:** Adaptabilidad por tipo de negocio, corte de caja formal y métodos de pago.
+
+### Historias de Usuario (Sprint 3)
+
+#### HU7 – Configuración inicial del comercio
+
+**Como** comerciante  
+**Quiero** configurar mi tipo de negocio al iniciar el sistema  
+**Para** que el sistema se adapte a mi operación (abarrotes, farmacia, etc.)
+
+**Criterios de aceptación:**
+- Pantalla de configuración inicial en primer arranque
+- Selección de tipo de negocio (retail, farmacia, etc.)
+- Configuración persistente en base de datos
+- No se solicita en arranques posteriores
+
+#### HU8 – Corte de caja diario formal
+
+**Como** comerciante  
+**Quiero** realizar un corte de caja al final del día  
+**Para** cerrar el flujo operativo y validar totales
+
+**Criterios de aceptación:**
+- Botón de corte accesible desde dashboard/terminal
+- Resumen de ventas del día (cantidad, total)
+- Folio/ID único para cada corte
+- Historial de cortes persistente
+- No permite vender después del corte hasta nuevo día
+
+#### HU9 – Métodos de pago (Efectivo, Tarjeta, Transferencia)
+
+**Como** vendedor  
+**Quiero** registrar el método de pago de cada venta  
+**Para** tener historial y validar reconciliación
+
+**Criterios de aceptación:**
+- Selección de método en checkout (Efectivo, Tarjeta, Transferencia)
+- Validación de monto recibido en efectivo
+- Cálculo de cambio automático
+- Persistencia de método en cada venta
+
+#### HU10 – Implementación de RetailContext
+
+**Como** sistema  
+**Quiero** aplicar reglas específicas por tipo de comercio  
+**Para** ser adaptable a diferentes operaciones
+
+**Criterios de aceptación:**
+- Contexto persistente basado en configuración inicial
+- Reglas de negocio específicas por contexto
+- Extensibilidad para futuros contextos (Pharmacy, Restaurant, etc.)
+
+### Tareas Técnicas Detalladas (Sprint 3)
+
+#### 1. Sistema de configuración inicial del comercio (HU7)
+
+- Crear pantalla inicial de onboarding de negocio
+- Definir tabla Configuration en Prisma
+- Implementar servicio ConfigurationService
+- Validar configuración al arrancar la app
+- Migración a pantalla principal si ya está configurado
+
+**Responsable principal:** Alfredo (Tech Lead)
+
+#### 2. Entidad y servicio de Corte de Caja (HU8)
+
+- Crear entidad CashRegister en dominio
+- Crear repositorio PrismaCashRegisterRepository
+- Implementar lógica de cierre diario
+- Validar que no hay ventas post-corte
+- Generar reportes de corte
+
+**Responsable principal:** Diego (Desarrollador)
+
+#### 3. Sistema de métodos de pago (HU9)
+
+- Agregar campo paymentMethod a entidad Sale
+- Actualizar CheckoutModal con métodos de pago
+- Modificar SaleService para registrar método
+- Cálculo de cambio en efectivo
+
+**Responsable principal:** Ana (Desarrolladora)
+
+#### 4. Implementación de RetailContext (HU10)
+
+- Crear RetailContext concreto en dominio
+- Inyectar contexto en servicios
+- Aplicar reglas según tipo de negocio
+- Preparar extensión para otros contextos
+
+**Responsable principal:** Alfredo (Tech Lead)
+
+### Incremento esperado del Sprint 3
+
+**POS adaptable a tipo de comercio, con corte diario formal y múltiples métodos de pago funcionales.**
+
+---
+
 ## Próximos Sprints (Pendientes de Planeación)
 
 Los siguientes sprints abordarán:
 
-- Sprint 1.5: Integración y cierre del core (EN CURSO - 1 semana)
-- Sprint 2: Configuración y control básico (Pendiente - 2 semanas)
-- Sprint 3: Pagos y métodos de cobro
-- Sprint 4: Reportes y analítica básica
-- Sprint 5: Sincronización y respaldo
-- Sprint 6: Optimizaciones y extensiones por contexto
+- Sprint 1.5: Integración y cierre del core (COMPLETADO)
+- Sprint 2: Configuración y control básico (COMPLETADO)
+- Sprint 3: Configuración de comercio y corte de caja (PLANEADO - 2 semanas)
+- Sprint 4: Reportes avanzados y analítica
+- Sprint 5: Sincronización y respaldo en nube
+- Sprint 6: Optimizaciones y extensiones
