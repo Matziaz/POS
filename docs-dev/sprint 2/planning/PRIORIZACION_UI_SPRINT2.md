@@ -164,4 +164,3 @@ Checklist de aceptación de UI por pantalla:
 Enfoque de UI Sprint 2 es: **Terminal de Venta → Dashboard → Flujo de Cobro** como tier 1 prioritario.
 
 Con esto resuelto y componentes base creados, el resto de pantallas (Inventario avanzado, Reportes, Directorio) caen más rápido porque reutilizan bloques.
-

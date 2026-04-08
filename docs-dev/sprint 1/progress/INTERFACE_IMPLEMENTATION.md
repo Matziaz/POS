@@ -137,9 +137,7 @@ sonner                    — toasts (instalado, disponible para uso futuro)
 @radix-ui/react-dialog    — primitiva accesible para modales
 @radix-ui/react-alert-dialog — primitiva para diálogos de confirmación
 @radix-ui/react-label     — primitiva para labels de formulario
-@radix-ui/react-slot      — composición de componentes (Button asChild)
+@radix-ui/react-slot     — composición de componentes (Button asChild)
 tailwindcss-animate       — animaciones para shadcn/ui (dev dep)
 autoprefixer              — prefijos CSS automáticos (dev dep)
 ```
-
----
