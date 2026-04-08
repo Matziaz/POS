@@ -10,5 +10,7 @@
 // Placeholder: ConfigRepository implementation
 
 export * from "./PrismaProductRepository";
+export * from "./PrismaProductTypeRepository";
+export * from "./PrismaRoleRepository";
 export * from "./PrismaProviderRepository";
 export * from "./PrismaUserRepository";

@@ -7,3 +7,4 @@
 
 export * from "./ProductService";
 export * from "./SaleService";
+export * from "./AdminSetupService";

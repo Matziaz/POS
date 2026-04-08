@@ -27,6 +27,15 @@ interface ProductTypeJSON {
   name: string;
 }
 
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
+  id: string;
+  name: string;
+}
+
 interface ProviderJSON {
   id: string;
   name: string;
@@ -70,6 +79,20 @@ interface UserUpdateJSON {
   username: string;
   password?: string;
   roleType: "ADMIN" | "CASHIER";
+}
+
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
 }
 
 interface SaleItemJSON {
@@ -116,6 +139,20 @@ const electronAPI = {
     ipcRenderer.invoke("product:restore", id, stock),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
+  productTypeCreate: (data: ProductTypeCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("productType:create", data),
+  productTypeUpdate: (data: ProductTypeUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("productType:update", data),
+  productTypeDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("productType:delete", id),
+  roleList: (): Promise<RoleJSON[]> =>
+    ipcRenderer.invoke("role:list"),
+  roleCreate: (data: RoleCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("role:create", data),
+  roleUpdate: (data: RoleUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("role:update", data),
+  roleDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("role:delete", id),
   providerList: (): Promise<ProviderJSON[]> =>
     ipcRenderer.invoke("provider:list"),
   providerSave: (data: ProviderCreateJSON): Promise<void> =>

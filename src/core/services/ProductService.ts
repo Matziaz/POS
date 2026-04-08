@@ -175,6 +175,18 @@ export class ProductService {
     return this.products.list();
   }
 
+  async restoreProduct(input: { id: string; stock: number }): Promise<void> {
+    const id = input.id?.trim();
+    if (!id) throw new ValidationError("id is required");
+
+    if (!Number.isInteger(input.stock) || input.stock < 0) {
+      throw new ValidationError("stock must be a non-negative integer");
+    }
+
+    await this.products.restore(id, input.stock);
+    await this.recordStockMovement(id, input.stock);
+  }
+
   async getBySku(sku: string): Promise<Product> {
     const s = sku?.trim();
     if (!s) throw new ValidationError("sku is required");

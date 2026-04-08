@@ -15,8 +15,11 @@ import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
 import { Provider, User } from "../core/entities";
+import { AdminSetupService } from "../core/services";
 import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
+import { PrismaProductTypeRepository } from "../infrastructure/persistence/PrismaProductTypeRepository";
+import { PrismaRoleRepository } from "../infrastructure/persistence/PrismaRoleRepository";
 import { PrismaSaleRepository } from "../infrastructure/persistence/PrismaSaleRepository";
 import { PrismaInventoryMovementRepository } from "../infrastructure/persistence/PrismaInventoryMovementRepository";
 import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaProviderRepository";
@@ -39,6 +42,9 @@ const saleRepository = new PrismaSaleRepository(prisma);
 const inventoryMovementRepository = new PrismaInventoryMovementRepository(prisma);
 const providerRepository = new PrismaProviderRepository(prisma);
 const userRepository = new PrismaUserRepository(prisma);
+const productTypeRepository = new PrismaProductTypeRepository(prisma);
+const roleRepository = new PrismaRoleRepository(prisma);
+const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -56,6 +62,15 @@ interface ProductJSON {
 }
 
 interface ProductTypeJSON {
+  id: string;
+  name: string;
+}
+
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
   id: string;
   name: string;
 }
@@ -129,6 +144,20 @@ interface UserUpdateJSON {
   roleType: "ADMIN" | "CASHIER";
 }
 
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
+}
+
 // ─── Product handlers ─────────────────────────────────────────────────────────
 
 function registerProductHandlers() {
@@ -183,16 +212,20 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("productType:list", async (): Promise<ProductTypeJSON[]> => {
-    const rows = await prisma.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
-      'SELECT id, name FROM product_type WHERE id IS NOT NULL ORDER BY name ASC'
-    );
+    const rows = await adminSetupService.listProductTypes();
+    return rows.map((row) => row.toJSON());
+  });
 
-    return rows
-      .filter((row) => typeof row.id === "string" && row.id.trim().length > 0)
-      .map((row) => ({
-        id: row.id as string,
-        name: row.name,
-      }));
+  ipcMain.handle("productType:create", async (_event, data: ProductTypeCreateJSON): Promise<void> => {
+    await adminSetupService.createProductType({ name: data.name });
+  });
+
+  ipcMain.handle("productType:update", async (_event, data: ProductTypeUpdateJSON): Promise<void> => {
+    await adminSetupService.updateProductType({ id: data.id, name: data.name });
+  });
+
+  ipcMain.handle("productType:delete", async (_event, id: string): Promise<void> => {
+    await adminSetupService.deleteProductType(id);
   });
 }
 
@@ -389,6 +422,23 @@ function registerContactHandlers() {
     }
 
     await userRepository.delete(id);
+  });
+
+  ipcMain.handle("role:list", async (): Promise<RoleJSON[]> => {
+    const roles = await adminSetupService.listRoles();
+    return roles.map((role) => role.toJSON());
+  });
+
+  ipcMain.handle("role:create", async (_event, data: RoleCreateJSON): Promise<void> => {
+    await adminSetupService.createRole({ type: data.type });
+  });
+
+  ipcMain.handle("role:update", async (_event, data: RoleUpdateJSON): Promise<void> => {
+    await adminSetupService.updateRole({ id: data.id, type: data.type });
+  });
+
+  ipcMain.handle("role:delete", async (_event, id: string): Promise<void> => {
+    await adminSetupService.deleteRole(id);
   });
 }
 

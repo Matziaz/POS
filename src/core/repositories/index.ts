@@ -10,3 +10,5 @@ export * from "./SaleRepository";
 export * from "./InventoryMovementRepository";
 export * from "./ProviderRepository";
 export * from "./UserRepository";
+export * from "./ProductTypeRepository";
+export * from "./RoleRepository";

@@ -21,6 +21,15 @@ interface ProductTypeJSON {
   name: string
 }
 
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
+  id: string;
+  name: string;
+}
+
 interface ProviderJSON {
   id: string
   name: string
@@ -66,6 +75,20 @@ interface UserUpdateJSON {
   roleType: "ADMIN" | "CASHIER"
 }
 
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
+}
+
 interface SaleItemJSON {
   id: string
   saleId: string
@@ -100,6 +123,13 @@ interface ElectronAPI {
   productDelete(id: string): Promise<void>
   productRestore(id: string, stock: number): Promise<void>
   productTypeList(): Promise<ProductTypeJSON[]>
+  productTypeCreate(data: ProductTypeCreateJSON): Promise<void>;
+  productTypeUpdate(data: ProductTypeUpdateJSON): Promise<void>;
+  productTypeDelete(id: string): Promise<void>;
+  roleList(): Promise<RoleJSON[]>;
+  roleCreate(data: RoleCreateJSON): Promise<void>;
+  roleUpdate(data: RoleUpdateJSON): Promise<void>;
+  roleDelete(id: string): Promise<void>;
   providerList(): Promise<ProviderJSON[]>
   providerSave(data: ProviderCreateJSON): Promise<void>
   providerUpdate(data: ProviderUpdateJSON): Promise<void>

@@ -5,9 +5,9 @@ import { ReportsPage } from '@interface/pages/ReportsPage'
 import { InventoryPage } from '@interface/pages/InventoryPage'
 import { SalesPage } from '@interface/pages/SalesPage'
 import { SalesTerminalPage } from '@interface/pages/SalesTerminalPage'
+import { AdminPage } from '@interface/pages/AdminPage'
 import { AppLayout } from '@interface/components/layout'
 import { ContactsPage } from './interface/pages/ContactsPage'
-import { DeletedProductsPage } from './interface/pages/DeletedProductsPage'
 
 export const App: React.FC = () => {
   return (
@@ -18,7 +18,8 @@ export const App: React.FC = () => {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/reportes" element={<ReportsPage />} />
           <Route path="/inventario" element={<InventoryPage />} />
-          <Route path="/inventario/restaurar" element={<DeletedProductsPage />} />
+          <Route path="/inventario/restaurar" element={<AdminPage initialSection="restore" />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/ventas" element={<SalesPage />} />
           <Route path="/ventas/terminal" element={<SalesTerminalPage />} />
           <Route path="/contactos" element={<ContactsPage />} />

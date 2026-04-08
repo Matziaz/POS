@@ -9,6 +9,7 @@ export * from "./InventoryMovement";
 export * from "./Product";
 export * from "./Provider";
 export * from "./Role";
+export * from "./ProductType";
 export * from "./Sale";
 export * from "./SaleItem";
 export * from "./User";

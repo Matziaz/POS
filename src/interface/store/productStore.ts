@@ -151,8 +151,8 @@ export const useProductStore = create<ProductState>((set, get) => ({
   restoreProduct: async (id: string, stock: number) => {
     set({ isLoading: true, error: null })
     try {
-      const repo = getProductRepository()
-      await repo.restore(id, stock)
+      const service = getProductService()
+      await service.restoreProduct({ id, stock })
       await get().fetchProducts()
       await get().fetchDeletedProducts()
     } catch (err) {
