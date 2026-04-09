@@ -14,3 +14,4 @@ export * from "./PrismaProductTypeRepository";
 export * from "./PrismaRoleRepository";
 export * from "./PrismaProviderRepository";
 export * from "./PrismaUserRepository";
+export * from "./PrismaAppConfigurationRepository";

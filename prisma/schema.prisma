@@ -19,7 +19,7 @@ model inventory_movement {
 model product {
   id                 String               @id
   name               String
-  sku                String
+  sku                String               @unique(map: "sqlite_autoindex_product_2")
   type_id            String
   price              Float
   stock              Int                  @default(0)
@@ -31,9 +31,6 @@ model product {
   product_type       product_type         @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction) @ignore
   provider           provider             @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sale_item          sale_item[]
-
-  @@index([sku])
-  @@index([deleted_at])
 }
 
 model provider {
@@ -52,12 +49,15 @@ model role {
 }
 
 model sale {
-  id         String      @id
-  user_id    String
-  total      Float
-  created_at String      @default("CURRENT_TIMESTAMP")
-  user       user        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sale_item  sale_item[]
+  id               String         @id
+  user_id          String
+  cash_register_id String
+  total            Float
+  created_at       String         @default("CURRENT_TIMESTAMP")
+  cash_register    cash_register  @relation(fields: [cash_register_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user             user           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale_item        sale_item[]
+  sale_payment     sale_payment[]
 }
 
 model sale_item {
@@ -71,13 +71,21 @@ model sale_item {
 }
 
 model user {
-  id         String @id
-  username   String @unique(map: "sqlite_autoindex_user_2")
-  password   String
-  role_id    String
-  created_at String @default("CURRENT_TIMESTAMP")
-  sale       sale[]
-  role       role   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id            String          @id
+  username      String          @unique(map: "sqlite_autoindex_user_2")
+  password      String
+  role_id       String
+  created_at    String          @default("CURRENT_TIMESTAMP")
+  cash_closure  cash_closure[]
+  cash_register cash_register[]
+  sale          sale[]
+  role          role            @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model app_configuration {
+  id             String @id
+  retail_context String
+  is_active      Int    @default(1)
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -87,4 +95,60 @@ model product_type {
   product product[]
 
   @@ignore
+}
+
+model cash_closure {
+  id                             String                           @id
+  folio                          String                           @unique(map: "sqlite_autoindex_cash_closure_2")
+  business_date                  String
+  opened_at                      String
+  closed_at                      String
+  sales_count                    Int
+  total_amount                   Float
+  is_final                       Int                              @default(1)
+  user_id                        String?
+  notes                          String?
+  created_at                     String                           @default("CURRENT_TIMESTAMP")
+  user                           user?                            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cash_closure_payment_breakdown cash_closure_payment_breakdown[]
+}
+
+model cash_closure_payment_breakdown {
+  id                String          @id
+  cash_closure_id   String
+  payment_method_id String
+  total_amount      Float
+  payment_methods   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cash_closure      cash_closure    @relation(fields: [cash_closure_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model cash_register {
+  id                String @id
+  opening_amount    Float  @default(0)
+  status            String @default("open")
+  opened_at         String @default("CURRENT_TIMESTAMP")
+  opened_by_user_id String
+  user              user   @relation(fields: [opened_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale              sale[]
+}
+
+model payment_methods {
+  id                             String                           @id
+  method                         String                           @unique(map: "sqlite_autoindex_payment_methods_2")
+  is_cash                        Int                              @default(0)
+  is_active                      Int                              @default(1)
+  display_order                  Int?
+  cash_closure_payment_breakdown cash_closure_payment_breakdown[]
+  sale_payment                   sale_payment[]
+}
+
+model sale_payment {
+  id                String          @id
+  sale_id           String
+  payment_method_id String
+  amount            Float
+  tendered          Float?
+  change_due        Float?
+  payment_methods   payment_methods @relation(fields: [payment_method_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sale              sale            @relation(fields: [sale_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

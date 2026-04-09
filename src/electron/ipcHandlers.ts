@@ -15,7 +15,7 @@ import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
 import { Provider, User } from "../core/entities";
-import { AdminSetupService } from "../core/services";
+import { AdminSetupService, ConfigurationService } from "../core/services";
 import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
 import { PrismaProductTypeRepository } from "../infrastructure/persistence/PrismaProductTypeRepository";
@@ -24,6 +24,7 @@ import { PrismaSaleRepository } from "../infrastructure/persistence/PrismaSaleRe
 import { PrismaInventoryMovementRepository } from "../infrastructure/persistence/PrismaInventoryMovementRepository";
 import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaProviderRepository";
 import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
+import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -44,7 +45,9 @@ const providerRepository = new PrismaProviderRepository(prisma);
 const userRepository = new PrismaUserRepository(prisma);
 const productTypeRepository = new PrismaProductTypeRepository(prisma);
 const roleRepository = new PrismaRoleRepository(prisma);
+const appConfigurationRepository = new PrismaAppConfigurationRepository(prisma);
 const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
+const configurationService = new ConfigurationService(appConfigurationRepository);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -156,6 +159,16 @@ interface RoleCreateJSON {
 interface RoleUpdateJSON {
   id: string;
   type: string;
+}
+
+interface ConfigurationJSON {
+  id: string;
+  retailContext: string;
+  isActive: string | number | null;
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string;
 }
 
 // ─── Product handlers ─────────────────────────────────────────────────────────
@@ -442,6 +455,30 @@ function registerContactHandlers() {
   });
 }
 
+// ─── Configuration handlers ───────────────────────────────────────────────────
+
+function registerConfigurationHandlers() {
+  ipcMain.handle("configuration:listContexts", async (): Promise<string[]> => {
+    return configurationService.listAvailableContexts();
+  });
+
+  ipcMain.handle("configuration:get", async (): Promise<ConfigurationJSON | null> => {
+    const config = await configurationService.getConfiguration();
+    return config ? config.toJSON() : null;
+  });
+
+  ipcMain.handle("configuration:isSetupComplete", async (): Promise<boolean> => {
+    return configurationService.isSetupComplete();
+  });
+
+  ipcMain.handle("configuration:saveInitial", async (_event, data: ConfigurationCreateJSON): Promise<ConfigurationJSON> => {
+    const saved = await configurationService.saveInitialConfiguration({
+      retailContext: data.retailContext,
+    });
+    return saved.toJSON();
+  });
+}
+
 // ─── Register all ─────────────────────────────────────────────────────────────
 
 export function registerAllIpcHandlers() {
@@ -449,6 +486,7 @@ export function registerAllIpcHandlers() {
   registerSaleHandlers();
   registerInventoryMovementHandlers();
   registerContactHandlers();
+  registerConfigurationHandlers();
 
   console.log("[IPC] All database handlers registered");
 }

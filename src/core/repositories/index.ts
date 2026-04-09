@@ -12,3 +12,4 @@ export * from "./ProviderRepository";
 export * from "./UserRepository";
 export * from "./ProductTypeRepository";
 export * from "./RoleRepository";
+export * from "./AppConfigurationRepository";

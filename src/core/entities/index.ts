@@ -13,3 +13,4 @@ export * from "./ProductType";
 export * from "./Sale";
 export * from "./SaleItem";
 export * from "./User";
+export * from "./AppConfiguration";

@@ -119,6 +119,16 @@ interface InventoryMovementJSON {
   createdAt: string;
 }
 
+interface ConfigurationJSON {
+  id: string;
+  retailContext: string;
+  isActive: string | number | null;
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string;
+}
+
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
 
 const electronAPI = {
@@ -189,6 +199,16 @@ const electronAPI = {
     ipcRenderer.invoke("inventoryMovement:save", data),
   inventoryMovementListByProduct: (productId: string): Promise<InventoryMovementJSON[]> =>
     ipcRenderer.invoke("inventoryMovement:listByProduct", productId),
+
+  // App Configuration
+  configurationListContexts: (): Promise<string[]> =>
+    ipcRenderer.invoke("configuration:listContexts"),
+  configurationGet: (): Promise<ConfigurationJSON | null> =>
+    ipcRenderer.invoke("configuration:get"),
+  configurationIsSetupComplete: (): Promise<boolean> =>
+    ipcRenderer.invoke("configuration:isSetupComplete"),
+  configurationSaveInitial: (data: ConfigurationCreateJSON): Promise<ConfigurationJSON> =>
+    ipcRenderer.invoke("configuration:saveInitial", data),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

@@ -113,6 +113,16 @@ interface InventoryMovementJSON {
   createdAt: string
 }
 
+interface ConfigurationJSON {
+  id: string
+  retailContext: string
+  isActive: string | number | null
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string
+}
+
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
@@ -150,6 +160,12 @@ interface ElectronAPI {
   // Inventory Movements
   inventoryMovementSave(data: InventoryMovementJSON): Promise<void>
   inventoryMovementListByProduct(productId: string): Promise<InventoryMovementJSON[]>
+
+  // App Configuration
+  configurationListContexts(): Promise<string[]>
+  configurationGet(): Promise<ConfigurationJSON | null>
+  configurationIsSetupComplete(): Promise<boolean>
+  configurationSaveInitial(data: ConfigurationCreateJSON): Promise<ConfigurationJSON>
 }
 
 declare global {
