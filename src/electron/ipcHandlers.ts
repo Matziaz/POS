@@ -15,12 +15,18 @@ import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
 import { Provider, User } from "../core/entities";
+import { CashRegister } from "../core/entities/CashRegister";
+import { AdminSetupService, ConfigurationService } from "../core/services";
 import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
+import { PrismaProductTypeRepository } from "../infrastructure/persistence/PrismaProductTypeRepository";
+import { PrismaRoleRepository } from "../infrastructure/persistence/PrismaRoleRepository";
 import { PrismaSaleRepository } from "../infrastructure/persistence/PrismaSaleRepository";
 import { PrismaInventoryMovementRepository } from "../infrastructure/persistence/PrismaInventoryMovementRepository";
 import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaProviderRepository";
 import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
+import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
+import { PrismaCashRegisterRepository } from "../infrastructure/persistence/PrismaCashRegisterRepository";
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -39,6 +45,12 @@ const saleRepository = new PrismaSaleRepository(prisma);
 const inventoryMovementRepository = new PrismaInventoryMovementRepository(prisma);
 const providerRepository = new PrismaProviderRepository(prisma);
 const userRepository = new PrismaUserRepository(prisma);
+const productTypeRepository = new PrismaProductTypeRepository(prisma);
+const roleRepository = new PrismaRoleRepository(prisma);
+const appConfigurationRepository = new PrismaAppConfigurationRepository(prisma);
+const cashRegisterRepository = new PrismaCashRegisterRepository(prisma);
+const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
+const configurationService = new ConfigurationService(appConfigurationRepository);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -52,9 +64,19 @@ interface ProductJSON {
   providerId: string;
   image: string;
   createdAt: string;
+  deletedAt: string | null;
 }
 
 interface ProductTypeJSON {
+  id: string;
+  name: string;
+}
+
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
   id: string;
   name: string;
 }
@@ -70,6 +92,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string;
   userId: string;
+  cashRegisterId?: string | null;
   total: number;
   createdAt: string;
   items: SaleItemJSON[];
@@ -128,6 +151,43 @@ interface UserUpdateJSON {
   roleType: "ADMIN" | "CASHIER";
 }
 
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
+}
+
+interface ConfigurationJSON {
+  id: string;
+  retailContext: string;
+  isActive: string | number | null;
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string;
+}
+
+interface CashRegisterJSON {
+  id: string;
+  openingAmount: number;
+  status: string;
+  openedAt: string;
+  openedByUserId: string;
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number;
+  openedByUserId?: string;
+}
+
 // ─── Product handlers ─────────────────────────────────────────────────────────
 
 function registerProductHandlers() {
@@ -146,6 +206,11 @@ function registerProductHandlers() {
     return product ? product.toJSON() : null;
   });
 
+  ipcMain.handle("product:listDeleted", async () => {
+    const products = await productRepository.listDeleted();
+    return products.map((product) => product.toJSON());
+  });
+
   ipcMain.handle("product:save", async (_event, data: ProductJSON) => {
     await productRepository.save(
       Product.create({
@@ -156,12 +221,14 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("product:delete", async (_event, id: string) => {
-    const saleItemsCount = await prisma.sale_item.count({ where: { product_id: id } });
-    const movementsCount = await prisma.inventory_movement.count({ where: { product_id: id } });
-    if (saleItemsCount > 0 || movementsCount > 0) {
-      throw new Error(`Cannot delete product; referenced by ${saleItemsCount} sale items and ${movementsCount} inventory movements`);
-    }
     await productRepository.delete(id);
+  });
+
+  ipcMain.handle("product:restore", async (_event, id: string, stock: number) => {
+    if (!Number.isInteger(stock) || stock < 0) {
+      throw new Error("Stock must be a non-negative integer");
+    }
+    await productRepository.restore(id, stock);
   });
 
   // Force delete: elimina en transacción las dependencias y luego el producto.
@@ -175,16 +242,20 @@ function registerProductHandlers() {
   });
 
   ipcMain.handle("productType:list", async (): Promise<ProductTypeJSON[]> => {
-    const rows = await prisma.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
-      'SELECT id, name FROM product_type WHERE id IS NOT NULL ORDER BY name ASC'
-    );
+    const rows = await adminSetupService.listProductTypes();
+    return rows.map((row) => row.toJSON());
+  });
 
-    return rows
-      .filter((row) => typeof row.id === "string" && row.id.trim().length > 0)
-      .map((row) => ({
-        id: row.id as string,
-        name: row.name,
-      }));
+  ipcMain.handle("productType:create", async (_event, data: ProductTypeCreateJSON): Promise<void> => {
+    await adminSetupService.createProductType({ name: data.name });
+  });
+
+  ipcMain.handle("productType:update", async (_event, data: ProductTypeUpdateJSON): Promise<void> => {
+    await adminSetupService.updateProductType({ id: data.id, name: data.name });
+  });
+
+  ipcMain.handle("productType:delete", async (_event, id: string): Promise<void> => {
+    await adminSetupService.deleteProductType(id);
   });
 }
 
@@ -219,6 +290,7 @@ function registerSaleHandlers() {
       Sale.create({
         id: data.id,
         userId: data.userId,
+        cashRegisterId: data.cashRegisterId,
         createdAt: data.createdAt,
         items: data.items.map((item) => ({
           id: item.id,
@@ -254,7 +326,7 @@ function registerContactHandlers() {
     const counts = ids.length
       ? await prisma.product.groupBy({
           by: ["provider_id"],
-          where: { provider_id: { in: ids } },
+          where: { provider_id: { in: ids }, deleted_at: null },
           _count: { provider_id: true },
         })
       : [];
@@ -382,6 +454,76 @@ function registerContactHandlers() {
 
     await userRepository.delete(id);
   });
+
+  ipcMain.handle("role:list", async (): Promise<RoleJSON[]> => {
+    const roles = await adminSetupService.listRoles();
+    return roles.map((role) => role.toJSON());
+  });
+
+  ipcMain.handle("role:create", async (_event, data: RoleCreateJSON): Promise<void> => {
+    await adminSetupService.createRole({ type: data.type });
+  });
+
+  ipcMain.handle("role:update", async (_event, data: RoleUpdateJSON): Promise<void> => {
+    await adminSetupService.updateRole({ id: data.id, type: data.type });
+  });
+
+  ipcMain.handle("role:delete", async (_event, id: string): Promise<void> => {
+    await adminSetupService.deleteRole(id);
+  });
+}
+
+// ─── Configuration handlers ───────────────────────────────────────────────────
+
+function registerConfigurationHandlers() {
+  ipcMain.handle("configuration:listContexts", async (): Promise<string[]> => {
+    return configurationService.listAvailableContexts();
+  });
+
+  ipcMain.handle("configuration:get", async (): Promise<ConfigurationJSON | null> => {
+    const config = await configurationService.getConfiguration();
+    return config ? config.toJSON() : null;
+  });
+
+  ipcMain.handle("configuration:isSetupComplete", async (): Promise<boolean> => {
+    return configurationService.isSetupComplete();
+  });
+
+  ipcMain.handle("configuration:saveInitial", async (_event, data: ConfigurationCreateJSON): Promise<ConfigurationJSON> => {
+    const saved = await configurationService.saveInitialConfiguration({
+      retailContext: data.retailContext,
+    });
+    return saved.toJSON();
+  });
+}
+
+function registerCashRegisterHandlers() {
+  ipcMain.handle("cashRegister:getOpen", async (): Promise<CashRegisterJSON | null> => {
+    const opened = await cashRegisterRepository.findOpen();
+    return opened ? opened.toJSON() : null;
+  });
+
+  ipcMain.handle("cashRegister:open", async (_event, data: CashRegisterCreateJSON): Promise<CashRegisterJSON> => {
+    const alreadyOpen = await cashRegisterRepository.findOpen();
+    if (alreadyOpen) {
+      throw new Error("Ya existe una caja abierta");
+    }
+
+    const openingAmount = Number(data.openingAmount);
+    if (!Number.isFinite(openingAmount) || openingAmount < 0) {
+      throw new Error("El monto de apertura debe ser un numero mayor o igual a 0");
+    }
+
+    const created = CashRegister.create({
+      id: newId(),
+      openingAmount,
+      status: "open",
+      openedByUserId: data.openedByUserId?.trim() || "user_cashier_001",
+    });
+
+    await cashRegisterRepository.save(created);
+    return created.toJSON();
+  });
 }
 
 // ─── Register all ─────────────────────────────────────────────────────────────
@@ -391,6 +533,8 @@ export function registerAllIpcHandlers() {
   registerSaleHandlers();
   registerInventoryMovementHandlers();
   registerContactHandlers();
+  registerConfigurationHandlers();
+  registerCashRegisterHandlers();
 
   console.log("[IPC] All database handlers registered");
 }

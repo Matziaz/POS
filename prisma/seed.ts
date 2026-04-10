@@ -89,12 +89,13 @@ async function main() {
 
   // 4. Crear productos
   const productCoke = await prisma.product.upsert({
-    where: { sku: 'SKU-COKE' },
+    where: { id: 'p1' },
     update: {},
     create: {
       id: 'p1',
       name: 'Coca Cola',
       sku: 'SKU-COKE',
+      type_id: '1',
       price: 15.5,
       stock: 10,
       provider_id: providerDefault.id,
@@ -103,12 +104,13 @@ async function main() {
   });
 
   const productBread = await prisma.product.upsert({
-    where: { sku: 'SKU-BREAD' },
+    where: { id: 'p2' },
     update: {},
     create: {
       id: 'p2',
       name: 'Pan Blanco',
       sku: 'SKU-BREAD',
+      type_id: '1',
       price: 8.0,
       stock: 5,
       provider_id: providerDefault.id,
@@ -117,12 +119,13 @@ async function main() {
   });
 
   const productCoffee = await prisma.product.upsert({
-    where: { sku: 'SKU-COFFEE' },
+    where: { id: 'p3' },
     update: {},
     create: {
       id: 'p3',
       name: 'Café Premium',
       sku: 'SKU-COFFEE',
+      type_id: '1',
       price: 32.25,
       stock: 3,
       provider_id: providerCafe.id,

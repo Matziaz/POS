@@ -45,4 +45,13 @@ export class ElectronProductRepository implements ProductRepository {
     const rows = await getAPI().productList()
     return rows.map((json: any) => Product.create(json))
   }
+
+  async listDeleted(): Promise<Product[]> {
+    const rows = await getAPI().productListDeleted()
+    return rows.map((json: any) => Product.create(json))
+  }
+
+  async restore(id: string, stock: number): Promise<void> {
+    await getAPI().productRestore(id, stock)
+  }
 }

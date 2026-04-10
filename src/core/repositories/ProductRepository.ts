@@ -8,4 +8,6 @@ export interface ProductRepository {
     findById(id: string): Promise<Product | null>;
     findBySku(sku: string): Promise<Product | null>;
     list(): Promise<Product[]>;
+    listDeleted(): Promise<Product[]>;
+    restore(id: string, stock: number): Promise<void>;
 }
