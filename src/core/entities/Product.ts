@@ -10,23 +10,28 @@ export interface ProductProps {
   providerId: string; //DB provider_id
   image: string; //DB image_url
   createdAt: string; //DB created_at String
+  deletedAt: string | null; //DB deleted_at String?
 }
 
 export class Product {
   private constructor(private readonly props: ProductProps) {}
 
   static create(
-    input: Omit<ProductProps, "createdAt" | "stock" | "typeId" | "image"> & {
+    input: Omit<ProductProps, "createdAt" | "stock" | "typeId" | "image" | "deletedAt"> & {
       createdAt?: string;
       stock?: number;
       typeId?: string;
       image?: string;
+      deletedAt?: string | null;
     }
   ): Product {
     const createdAt = input.createdAt ?? new Date().toISOString();
     const stock = input.stock ?? 0;
     const typeId = input.typeId?.trim() || "1";
     const image = input.image?.trim() ? input.image.trim() : "";
+    const deletedAt = typeof input.deletedAt === "string" && input.deletedAt.trim()
+      ? input.deletedAt.trim()
+      : null;
 
     if (!input.id?.trim()) throw new Error("Product.id is required");
     if (!input.sku?.trim()) throw new Error("Product.sku is required");
@@ -42,7 +47,7 @@ export class Product {
       throw new Error("Product.stock must be a non-negative integer");
     }
 
-    return new Product({ ...input, typeId, image, stock, createdAt });
+    return new Product({ ...input, typeId, image, stock, createdAt, deletedAt });
   }
 
   get id() { return this.props.id; }
@@ -54,6 +59,7 @@ export class Product {
   get providerId() { return this.props.providerId; }
   get image() { return this.props.image; }
   get createdAt() { return this.props.createdAt; }
+  get deletedAt() { return this.props.deletedAt ?? null; }
 
   withStock(newStock: number): Product {
     if(!Number.isInteger(newStock) || newStock < 0) {

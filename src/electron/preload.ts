@@ -19,9 +19,19 @@ interface ProductJSON {
   providerId: string;
   image: string;
   createdAt: string;
+  deletedAt: string | null;
 }
 
 interface ProductTypeJSON {
+  id: string;
+  name: string;
+}
+
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
   id: string;
   name: string;
 }
@@ -71,6 +81,20 @@ interface UserUpdateJSON {
   roleType: "ADMIN" | "CASHIER";
 }
 
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
+}
+
 interface SaleItemJSON {
   id: string;
   saleId: string;
@@ -82,6 +106,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string;
   userId: string;
+  cashRegisterId?: string | null;
   total: number;
   createdAt: string;
   items: SaleItemJSON[];
@@ -95,6 +120,29 @@ interface InventoryMovementJSON {
   createdAt: string;
 }
 
+interface ConfigurationJSON {
+  id: string;
+  retailContext: string;
+  isActive: string | number | null;
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string;
+}
+
+interface CashRegisterJSON {
+  id: string;
+  openingAmount: number;
+  status: string;
+  openedAt: string;
+  openedByUserId: string;
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number;
+  openedByUserId?: string;
+}
+
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
 
 const electronAPI = {
@@ -105,12 +153,30 @@ const electronAPI = {
     ipcRenderer.invoke("product:findById", id),
   productFindBySku: (sku: string): Promise<ProductJSON | null> =>
     ipcRenderer.invoke("product:findBySku", sku),
+  productListDeleted: (): Promise<ProductJSON[]> =>
+    ipcRenderer.invoke("product:listDeleted"),
   productSave: (data: ProductJSON): Promise<void> =>
     ipcRenderer.invoke("product:save", data),
   productDelete: (id: string): Promise<void> =>
     ipcRenderer.invoke("product:delete", id),
+  productRestore: (id: string, stock: number): Promise<void> =>
+    ipcRenderer.invoke("product:restore", id, stock),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
+  productTypeCreate: (data: ProductTypeCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("productType:create", data),
+  productTypeUpdate: (data: ProductTypeUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("productType:update", data),
+  productTypeDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("productType:delete", id),
+  roleList: (): Promise<RoleJSON[]> =>
+    ipcRenderer.invoke("role:list"),
+  roleCreate: (data: RoleCreateJSON): Promise<void> =>
+    ipcRenderer.invoke("role:create", data),
+  roleUpdate: (data: RoleUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("role:update", data),
+  roleDelete: (id: string): Promise<void> =>
+    ipcRenderer.invoke("role:delete", id),
   providerList: (): Promise<ProviderJSON[]> =>
     ipcRenderer.invoke("provider:list"),
   providerSave: (data: ProviderCreateJSON): Promise<void> =>
@@ -147,6 +213,22 @@ const electronAPI = {
     ipcRenderer.invoke("inventoryMovement:save", data),
   inventoryMovementListByProduct: (productId: string): Promise<InventoryMovementJSON[]> =>
     ipcRenderer.invoke("inventoryMovement:listByProduct", productId),
+
+  // App Configuration
+  configurationListContexts: (): Promise<string[]> =>
+    ipcRenderer.invoke("configuration:listContexts"),
+  configurationGet: (): Promise<ConfigurationJSON | null> =>
+    ipcRenderer.invoke("configuration:get"),
+  configurationIsSetupComplete: (): Promise<boolean> =>
+    ipcRenderer.invoke("configuration:isSetupComplete"),
+  configurationSaveInitial: (data: ConfigurationCreateJSON): Promise<ConfigurationJSON> =>
+    ipcRenderer.invoke("configuration:saveInitial", data),
+
+  // Cash Register
+  cashRegisterGetOpen: (): Promise<CashRegisterJSON | null> =>
+    ipcRenderer.invoke("cashRegister:getOpen"),
+  cashRegisterOpen: (data: CashRegisterCreateJSON): Promise<CashRegisterJSON> =>
+    ipcRenderer.invoke("cashRegister:open", data),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

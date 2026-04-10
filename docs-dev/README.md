@@ -26,6 +26,11 @@ Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyec
    - Patrones para nuevos componentes
    - Checklist rapido antes de merge
 
+5. **[README_SOFT_DELETE_PRODUCTOS.md](./README_SOFT_DELETE_PRODUCTOS.md)** — Borrado logico y restauracion de productos
+   - Cambio de delete fisico a soft delete
+   - Restauracion con stock manual desde una pagina dedicada
+   - Ajustes necesarios en Prisma, IPC, repositorios y store/hook UI
+
 ## Por Donde Empezar
 
 **Paso 1 — Solo si nunca trabajaste con desarrollo web:**
@@ -42,8 +47,8 @@ Lee [THEMING_GUIDE.md](./guides/THEMING_GUIDE.md) antes de tocar estilos. Te dic
 
 ## Referencias Rapidas
 
-| Si necesitas... | Ve a |
-|---|---|
-| Entender que construimos | [../docs/vision.md](../docs/vision.md) |
+| Si necesitas...                 | Ve a                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| Entender que construimos        | [../docs/vision.md](../docs/vision.md)                                   |
 | Saber por que estas tecnologias | [../docs/decisiones-arquitectura.md](../docs/decisiones-arquitectura.md) |
-| Ver el plan de desarrollo | [../docs/roadmap.md](../docs/roadmap.md) |
+| Ver el plan de desarrollo       | [../docs/roadmap.md](../docs/roadmap.md)                                 |

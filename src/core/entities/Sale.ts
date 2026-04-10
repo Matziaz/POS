@@ -4,6 +4,7 @@ export type SaleId = string;
 export interface SaleProps {
   id: SaleId;
   userId: string;    // DB user_id
+  cashRegisterId: string | null; // DB cash_register_id
   total: number;     // DB total Float
   createdAt: string; // DB created_at String
   items: SaleItem[];
@@ -15,10 +16,12 @@ export class Sale {
   static create(input: {
     id: SaleId;
     userId: string;
+    cashRegisterId?: string | null;
     items: Omit<SaleItemProps, "saleId">[];
     createdAt?: string;
   }): Sale {
     const createdAt = input.createdAt ?? new Date().toISOString();
+    const cashRegisterId = input.cashRegisterId?.trim() || null;
 
     if (!input.id?.trim()) throw new Error("Sale.id is required");
     if (!input.userId?.trim()) throw new Error("Sale.userId is required");
@@ -27,11 +30,12 @@ export class Sale {
     const items = input.items.map((it) => SaleItem.create({ ...it, saleId: input.id }));
     const total = items.reduce((acc, it) => acc + it.lineTotal, 0);
 
-    return new Sale({ id: input.id, userId: input.userId, total, createdAt, items });
+    return new Sale({ id: input.id, userId: input.userId, cashRegisterId, total, createdAt, items });
   }
 
   get id() { return this.props.id; }
   get userId() { return this.props.userId; }
+  get cashRegisterId() { return this.props.cashRegisterId; }
   get total() { return this.props.total; }
   get createdAt() { return this.props.createdAt; }
   get items() { return this.props.items; }
