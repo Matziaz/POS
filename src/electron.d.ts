@@ -100,6 +100,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string
   userId: string
+  cashRegisterId?: string | null
   total: number
   createdAt: string
   items: SaleItemJSON[]
@@ -121,6 +122,19 @@ interface ConfigurationJSON {
 
 interface ConfigurationCreateJSON {
   retailContext: string
+}
+
+interface CashRegisterJSON {
+  id: string
+  openingAmount: number
+  status: string
+  openedAt: string
+  openedByUserId: string
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number
+  openedByUserId?: string
 }
 
 interface ElectronAPI {
@@ -166,6 +180,10 @@ interface ElectronAPI {
   configurationGet(): Promise<ConfigurationJSON | null>
   configurationIsSetupComplete(): Promise<boolean>
   configurationSaveInitial(data: ConfigurationCreateJSON): Promise<ConfigurationJSON>
+
+  // Cash Register
+  cashRegisterGetOpen(): Promise<CashRegisterJSON | null>
+  cashRegisterOpen(data: CashRegisterCreateJSON): Promise<CashRegisterJSON>
 }
 
 declare global {

@@ -106,6 +106,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string;
   userId: string;
+  cashRegisterId?: string | null;
   total: number;
   createdAt: string;
   items: SaleItemJSON[];
@@ -127,6 +128,19 @@ interface ConfigurationJSON {
 
 interface ConfigurationCreateJSON {
   retailContext: string;
+}
+
+interface CashRegisterJSON {
+  id: string;
+  openingAmount: number;
+  status: string;
+  openedAt: string;
+  openedByUserId: string;
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number;
+  openedByUserId?: string;
 }
 
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
@@ -209,6 +223,12 @@ const electronAPI = {
     ipcRenderer.invoke("configuration:isSetupComplete"),
   configurationSaveInitial: (data: ConfigurationCreateJSON): Promise<ConfigurationJSON> =>
     ipcRenderer.invoke("configuration:saveInitial", data),
+
+  // Cash Register
+  cashRegisterGetOpen: (): Promise<CashRegisterJSON | null> =>
+    ipcRenderer.invoke("cashRegister:getOpen"),
+  cashRegisterOpen: (data: CashRegisterCreateJSON): Promise<CashRegisterJSON> =>
+    ipcRenderer.invoke("cashRegister:open", data),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

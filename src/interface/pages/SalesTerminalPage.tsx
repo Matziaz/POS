@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowLeftRight } from "lucide-react"
 import { Button } from "@interface/components/ui/button"
+import { Input } from "@interface/components/ui/input"
 import { useProducts } from "@interface/hooks/useProducts"
 import { useSales } from "@interface/hooks/useSales"
 import { useSaleSessionStore } from "@interface/store/saleSessionStore"
+import { DEFAULT_USER_ID } from "@shared/constants/constants"
 import {
   CategoryTabs,
   CheckoutModal,
@@ -21,6 +23,14 @@ function normalizeText(value: string): string {
 interface ProductTypeOption {
   id: string
   name: string
+}
+
+interface OpenCashRegisterView {
+  id: string
+  openingAmount: number
+  status: string
+  openedAt: string
+  openedByUserId: string
 }
 
 export const SalesTerminalPage: React.FC = () => {
@@ -41,6 +51,10 @@ export const SalesTerminalPage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [total, setTotal] = useState(0)
+  const [cashRegister, setCashRegister] = useState<OpenCashRegisterView | null>(null)
+  const [isCheckingCashRegister, setIsCheckingCashRegister] = useState(true)
+  const [openingAmountInput, setOpeningAmountInput] = useState("0")
+  const [isOpeningCashRegister, setIsOpeningCashRegister] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -58,6 +72,29 @@ export const SalesTerminalPage: React.FC = () => {
     }
 
     loadProductTypes()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadOpenCashRegister = async () => {
+      try {
+        const opened = await window.electronAPI?.cashRegisterGetOpen?.()
+        if (!isMounted) return
+        setCashRegister(opened ?? null)
+      } catch (error) {
+        if (!isMounted) return
+        setCheckoutError(error instanceof Error ? error.message : "No fue posible validar la caja abierta")
+      } finally {
+        if (isMounted) setIsCheckingCashRegister(false)
+      }
+    }
+
+    void loadOpenCashRegister()
 
     return () => {
       isMounted = false
@@ -121,6 +158,36 @@ export const SalesTerminalPage: React.FC = () => {
     }
   }
 
+  const handleOpenCashRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const openingAmount = Number(openingAmountInput)
+    if (!Number.isFinite(openingAmount) || openingAmount < 0) {
+      setCheckoutError("Ingresa un monto inicial valido")
+      return
+    }
+
+    try {
+      setIsOpeningCashRegister(true)
+      setCheckoutError(null)
+
+      const opened = await window.electronAPI?.cashRegisterOpen({
+        openingAmount,
+        openedByUserId: DEFAULT_USER_ID,
+      })
+
+      if (!opened) {
+        throw new Error("No se pudo abrir la caja")
+      }
+
+      setCashRegister(opened)
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "No fue posible abrir la caja")
+    } finally {
+      setIsOpeningCashRegister(false)
+    }
+  }
+
   const handleClearError = () => {
     setCheckoutError(null)
     setProductTypeError(null)
@@ -155,6 +222,41 @@ export const SalesTerminalPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {isCheckingCashRegister ? (
+        <div className="rounded-lg border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
+          Verificando estado de caja...
+        </div>
+      ) : !cashRegister ? (
+        <section className="mx-auto w-full max-w-xl rounded-xl border bg-card p-6">
+          <h2 className="text-xl font-semibold tracking-tight">Apertura de caja requerida</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Para registrar ventas primero debes abrir una caja.
+          </p>
+
+          <form className="mt-6 grid gap-4" onSubmit={handleOpenCashRegister}>
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium">Monto inicial</span>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={openingAmountInput}
+                onChange={(event) => setOpeningAmountInput(event.target.value)}
+                placeholder="0.00"
+              />
+            </label>
+
+            <Button type="submit" disabled={isOpeningCashRegister}>
+              {isOpeningCashRegister ? "Abriendo caja..." : "Abrir caja"}
+            </Button>
+          </form>
+        </section>
+      ) : (
+      <>
+      <div className="rounded-md border bg-card px-3 py-2 text-sm text-muted-foreground">
+        Caja abierta: <span className="font-medium text-foreground">{cashRegister.id}</span>
+      </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr]">
         <section className="flex min-h-0 flex-col gap-4 rounded-xl border bg-card p-4">
@@ -198,6 +300,8 @@ export const SalesTerminalPage: React.FC = () => {
         onClose={() => setShowCheckoutModal(false)}
         onConfirmPayment={handleConfirmPayment}
       />
+      </>
+      )}
     </div>
   )
 }

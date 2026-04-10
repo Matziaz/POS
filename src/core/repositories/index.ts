@@ -13,3 +13,8 @@ export * from "./UserRepository";
 export * from "./ProductTypeRepository";
 export * from "./RoleRepository";
 export * from "./AppConfigurationRepository";
+export * from "./CashRegisterRepository";
+export * from "./PaymentMethodRepository";
+export * from "./SalePaymentRepository";
+export * from "./CashClosureRepository";
+export * from "./CashClosurePaymentBreakdownRepository";

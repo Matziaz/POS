@@ -14,3 +14,8 @@ export * from "./Sale";
 export * from "./SaleItem";
 export * from "./User";
 export * from "./AppConfiguration";
+export * from "./CashRegister";
+export * from "./PaymentMethod";
+export * from "./SalePayment";
+export * from "./CashClosure";
+export * from "./CashClosurePaymentBreakdown";

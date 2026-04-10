@@ -15,6 +15,7 @@ import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
 import { Provider, User } from "../core/entities";
+import { CashRegister } from "../core/entities/CashRegister";
 import { AdminSetupService, ConfigurationService } from "../core/services";
 import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
@@ -25,6 +26,7 @@ import { PrismaInventoryMovementRepository } from "../infrastructure/persistence
 import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaProviderRepository";
 import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
 import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
+import { PrismaCashRegisterRepository } from "../infrastructure/persistence/PrismaCashRegisterRepository";
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -46,6 +48,7 @@ const userRepository = new PrismaUserRepository(prisma);
 const productTypeRepository = new PrismaProductTypeRepository(prisma);
 const roleRepository = new PrismaRoleRepository(prisma);
 const appConfigurationRepository = new PrismaAppConfigurationRepository(prisma);
+const cashRegisterRepository = new PrismaCashRegisterRepository(prisma);
 const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
 const configurationService = new ConfigurationService(appConfigurationRepository);
 
@@ -89,6 +92,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string;
   userId: string;
+  cashRegisterId?: string | null;
   total: number;
   createdAt: string;
   items: SaleItemJSON[];
@@ -169,6 +173,19 @@ interface ConfigurationJSON {
 
 interface ConfigurationCreateJSON {
   retailContext: string;
+}
+
+interface CashRegisterJSON {
+  id: string;
+  openingAmount: number;
+  status: string;
+  openedAt: string;
+  openedByUserId: string;
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number;
+  openedByUserId?: string;
 }
 
 // ─── Product handlers ─────────────────────────────────────────────────────────
@@ -273,6 +290,7 @@ function registerSaleHandlers() {
       Sale.create({
         id: data.id,
         userId: data.userId,
+        cashRegisterId: data.cashRegisterId,
         createdAt: data.createdAt,
         items: data.items.map((item) => ({
           id: item.id,
@@ -479,6 +497,35 @@ function registerConfigurationHandlers() {
   });
 }
 
+function registerCashRegisterHandlers() {
+  ipcMain.handle("cashRegister:getOpen", async (): Promise<CashRegisterJSON | null> => {
+    const opened = await cashRegisterRepository.findOpen();
+    return opened ? opened.toJSON() : null;
+  });
+
+  ipcMain.handle("cashRegister:open", async (_event, data: CashRegisterCreateJSON): Promise<CashRegisterJSON> => {
+    const alreadyOpen = await cashRegisterRepository.findOpen();
+    if (alreadyOpen) {
+      throw new Error("Ya existe una caja abierta");
+    }
+
+    const openingAmount = Number(data.openingAmount);
+    if (!Number.isFinite(openingAmount) || openingAmount < 0) {
+      throw new Error("El monto de apertura debe ser un numero mayor o igual a 0");
+    }
+
+    const created = CashRegister.create({
+      id: newId(),
+      openingAmount,
+      status: "open",
+      openedByUserId: data.openedByUserId?.trim() || "user_cashier_001",
+    });
+
+    await cashRegisterRepository.save(created);
+    return created.toJSON();
+  });
+}
+
 // ─── Register all ─────────────────────────────────────────────────────────────
 
 export function registerAllIpcHandlers() {
@@ -487,6 +534,7 @@ export function registerAllIpcHandlers() {
   registerInventoryMovementHandlers();
   registerContactHandlers();
   registerConfigurationHandlers();
+  registerCashRegisterHandlers();
 
   console.log("[IPC] All database handlers registered");
 }
