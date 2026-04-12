@@ -5,6 +5,7 @@ import { ReportsPage } from '@interface/pages/ReportsPage'
 import { InventoryPage } from '@interface/pages/InventoryPage'
 import { SalesPage } from '@interface/pages/SalesPage'
 import { SalesTerminalPage } from '@interface/pages/SalesTerminalPage'
+import { CashClosurePage } from '@interface/pages/CashClosurePage'
 import { AdminPage } from '@interface/pages/AdminPage'
 import { InitialSetupPage } from '@interface/pages/InitialSetupPage'
 import { AppLayout } from '@interface/components/layout'
@@ -67,6 +68,7 @@ export const App: React.FC = () => {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/ventas" element={<SalesPage />} />
           <Route path="/ventas/terminal" element={<SalesTerminalPage />} />
+          <Route path="/caja/cierre" element={<CashClosurePage />} />
           <Route path="/contactos" element={<ContactsPage />} />
         </Routes>
       </AppLayout>

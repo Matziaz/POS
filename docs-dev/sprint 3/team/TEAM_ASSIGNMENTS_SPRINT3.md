@@ -123,6 +123,33 @@
 
 ---
 
+## Estado Técnico Actual (12 abril 2026)
+
+### HU9 (Métodos de pago)
+- Flujo de checkout ya envía pagos estructurados (`paymentMethodId`, `amount`, `tendered`, `changeDue`).
+- Venta ya se guarda asociada a caja (`cashRegisterId`) y se persisten pagos en `sale_payment`.
+- Se agregaron repositorios e IPC para `salePayment`.
+
+### HU8 (Corte de caja)
+- Ya existen tablas en schema para cierre formal:
+	- `cash_closure`
+	- `cash_closure_payment_breakdown`
+	- `cash_register`
+- Se implementó servicio de cierre diario en core (`CashClosureService`) con:
+	- generación de folio
+	- cálculo de ventas y total
+	- breakdown por método de pago
+	- cierre de caja abierta (`status: closed`)
+- Se agregaron endpoints IPC para cierre y consulta por rango:
+	- `cashClosure:close`
+	- `cashClosure:listByDateRange`
+- Se habilitó pantalla mínima operativa de cierre en ruta `/caja/cierre`.
+
+### Validación
+- Tests unitarios de `CashClosureService` agregados y pasando.
+
+---
+
 ## Definición de Done (Sprint 3)
 
 Checklist para cada historia:
