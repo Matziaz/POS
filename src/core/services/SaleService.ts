@@ -4,19 +4,25 @@ import type { ProductRepository, SaleRepository} from "../repositories";
 import type { InventoryMovementRepository } from "../repositories/InventoryMovementRepository";
 import { newId } from "./id";
 import { DEFAULT_USER_ID } from "../../shared/constants/constants";
+import type { PosContext } from "../../domain/contextos";
+import { defaultContext } from "../../domain/contextos";
 
 export class SaleService {
   constructor(
     private readonly products: ProductRepository,
     private readonly sales: SaleRepository,
-    private readonly movements: InventoryMovementRepository
+    private readonly movements: InventoryMovementRepository,
+    private readonly getContext: () => PosContext = () => defaultContext
   ) {}
 
   async registerSale(input: {
     userId?: string;
+    cashRegisterId?: string;
     lines: { productSku: string; qty: number }[];
   }): Promise<Sale> {
-    const userId = input.userId?.trim() || DEFAULT_USER_ID;
+    const context = this.getContext();
+    const userId = input.userId?.trim() || context.defaultUserId || DEFAULT_USER_ID;
+    const cashRegisterId = input.cashRegisterId?.trim() || undefined;
     const lines = input.lines;
 
     if(!lines.length) throw new ValidationError("Sale must have at least one line");
@@ -25,8 +31,11 @@ export class SaleService {
 
     const items = [];
     for (const line of lines) {
-      const p = await this.products.findBySku(line.productSku);
-      if (!p) throw new NotFoundError(`Product with SKU ${line.productSku} not found`);
+      const normalizedSku = context.sku.normalize(line.productSku ?? "");
+      context.sku.validate(normalizedSku);
+
+      const p = await this.products.findBySku(normalizedSku);
+      if (!p) throw new NotFoundError(`Product with SKU ${normalizedSku} not found`);
       if (!Number.isInteger(line.qty) || line.qty <= 0) throw new ValidationError("Line quantity must be a positive integer");
       if (p.stock < line.qty) throw new ValidationError(`Not enough stock for product ${p.name}`);
 
@@ -49,7 +58,7 @@ export class SaleService {
       await this.movements.save(mv);
     }
 
-    const sale = Sale.create({ id: saleId, userId, items });
+    const sale = Sale.create({ id: saleId, userId, cashRegisterId, items });
     await this.sales.save(sale);
     return sale;
   }

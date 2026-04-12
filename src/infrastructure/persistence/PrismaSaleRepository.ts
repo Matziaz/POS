@@ -19,6 +19,28 @@ function toISOOrNow(value: unknown): string {
 export class PrismaSaleRepository implements SaleRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
 
+  private async resolveCashRegisterId(preferredId: string | null): Promise<string> {
+    const dbAny = this.db as any;
+
+    if (preferredId) {
+      const register = await dbAny.cash_register.findUnique({ where: { id: preferredId } });
+      if (register) return register.id;
+    }
+
+    const openRegister = await dbAny.cash_register.findFirst({
+      where: { status: "open" },
+      orderBy: { opened_at: "desc" as any },
+    });
+    if (openRegister) return openRegister.id;
+
+    const anyRegister = await dbAny.cash_register.findFirst({
+      orderBy: { opened_at: "desc" as any },
+    });
+    if (anyRegister) return anyRegister.id;
+
+    throw new Error("No cash register found. Create an open cash register before saving sales.");
+  }
+
   private normalizeRange(from: Date, to: Date): { fromISO: string; toISO: string } {
     const fromISO = from.toISOString();
     const toISO = to.toISOString();
@@ -32,11 +54,13 @@ export class PrismaSaleRepository implements SaleRepository {
 
   async save(sale: Sale): Promise<void> {
     const data = sale.toJSON();
+    const cashRegisterId = await this.resolveCashRegisterId(data.cashRegisterId ?? null);
 
     await this.db.sale.create({
       data: {
         id: data.id,
         user_id: data.userId,
+        cash_register_id: cashRegisterId,
         total: data.total,
         created_at: toISOOrNow(data.createdAt),
         sale_item: {
@@ -61,6 +85,7 @@ export class PrismaSaleRepository implements SaleRepository {
     return Sale.create({
       id: row.id,
       userId: row.user_id,
+      cashRegisterId: (row as any).cash_register_id,
       createdAt: toISOOrNow(row.created_at),
       items: row.sale_item.map((si) => ({
         id: si.id,
@@ -81,6 +106,7 @@ export class PrismaSaleRepository implements SaleRepository {
       Sale.create({
         id: row.id,
         userId: row.user_id,
+        cashRegisterId: (row as any).cash_register_id,
         createdAt: toISOOrNow(row.created_at),
         items: row.sale_item.map((si) => ({
           id: si.id,
@@ -110,6 +136,7 @@ export class PrismaSaleRepository implements SaleRepository {
       Sale.create({
         id: row.id,
         userId: row.user_id,
+        cashRegisterId: (row as any).cash_register_id,
         createdAt: toISOOrNow(row.created_at),
         items: row.sale_item.map((si) => ({
           id: si.id,

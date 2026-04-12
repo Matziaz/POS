@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { ProductService, SaleService } from "@core/services";
 import type { ProductRepository, SaleRepository, InventoryMovementRepository } from "@core/repositories";
+import { defaultContext, resolvePosContext } from "@domain/contextos";
 
 import { InMemoryProductRepository } from "./InMemoryProductRepository";
 import { InMemorySaleRepository } from "./InMemorySaleRepository";
@@ -32,8 +33,26 @@ const inventoryMovementRepository: InventoryMovementRepository = isElectron
   ? new ElectronInventoryMovementRepository()
   : new InMemoryInventoryMovementRepository();
 
-const productService = new ProductService(productRepository, inventoryMovementRepository);
-const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository);
+let activeContextName = defaultContext.name;
+
+if (isElectron) {
+  void window.electronAPI?.configurationGet?.()
+    .then((config) => {
+      if (config?.retailContext) {
+        activeContextName = config.retailContext;
+      }
+    })
+    .catch(() => {
+      activeContextName = defaultContext.name;
+    });
+}
+
+function getActiveContext() {
+  return resolvePosContext(activeContextName);
+}
+
+const productService = new ProductService(productRepository, inventoryMovementRepository, getActiveContext);
+const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository, getActiveContext);
 
 export function getProductService(): ProductService {
   return productService;
@@ -52,3 +71,4 @@ export function getSaleRepository(): SaleRepository {
 console.log('[serviceFactory] Electron detected:', isElectron);
 console.log('[serviceFactory] Product repo =', productRepository.constructor.name);
 console.log('[serviceFactory] Sale repo    =', saleRepository.constructor.name);
+console.log('[serviceFactory] Active context =', activeContextName);

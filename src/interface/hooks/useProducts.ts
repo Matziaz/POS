@@ -12,12 +12,15 @@ import type { ProductProps } from "@core/entities"
 
 export interface UseProductsReturn {
   products: ProductProps[]
+  deletedProducts: ProductProps[]
   isLoading: boolean
   error: string | null
   selectedProduct: ProductProps | null
+  fetchDeletedProducts: () => Promise<void>
   addProduct: (input: CreateProductInput) => Promise<void>
   updateProduct: (id: string, input: UpdateProductInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
+  restoreProduct: (id: string, stock: number) => Promise<void>
   selectProduct: (product: ProductProps | null) => void
   clearError: () => void
   refetch: () => Promise<void>
@@ -34,12 +37,15 @@ export function useProducts(): UseProductsReturn {
 
   return {
     products: store.products,
+    deletedProducts: store.deletedProducts,
     isLoading: store.isLoading,
     error: store.error,
     selectedProduct: store.selectedProduct,
+    fetchDeletedProducts: store.fetchDeletedProducts,
     addProduct: store.addProduct,
     updateProduct: store.updateProduct,
     deleteProduct: store.deleteProduct,
+    restoreProduct: store.restoreProduct,
     selectProduct: store.setSelectedProduct,
     clearError: store.clearError,
     refetch: store.fetchProducts,

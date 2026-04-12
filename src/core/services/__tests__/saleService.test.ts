@@ -39,6 +39,10 @@ function inMemoryProductRepo(seed: Product[] = []): ProductRepository {
       }
     },
     async list() { return [...byId.values()]; },
+    async listDeleted() { return []; },
+    async restore() {
+      throw new Error("restore not implemented in this test repo");
+    },
   };
 }
 
@@ -165,6 +169,7 @@ describe("SaleService flow (env-driven lines + dynamic expected total)", () => {
       name: "Proveedor Default",
       telephone: "555-0101",
       email: "proveedor@demo.com",
+      image: "",
     });
 
     // 3 productos con campos completos

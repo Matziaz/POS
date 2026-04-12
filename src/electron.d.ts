@@ -13,11 +13,21 @@ interface ProductJSON {
   providerId: string
   image: string
   createdAt: string
+  deletedAt: string | null
 }
 
 interface ProductTypeJSON {
   id: string
   name: string
+}
+
+interface ProductTypeCreateJSON {
+  name: string;
+}
+
+interface ProductTypeUpdateJSON {
+  id: string;
+  name: string;
 }
 
 interface ProviderJSON {
@@ -65,6 +75,20 @@ interface UserUpdateJSON {
   roleType: "ADMIN" | "CASHIER"
 }
 
+interface RoleJSON {
+  id: string;
+  type: string;
+}
+
+interface RoleCreateJSON {
+  type: string;
+}
+
+interface RoleUpdateJSON {
+  id: string;
+  type: string;
+}
+
 interface SaleItemJSON {
   id: string
   saleId: string
@@ -76,6 +100,7 @@ interface SaleItemJSON {
 interface SaleJSON {
   id: string
   userId: string
+  cashRegisterId?: string | null
   total: number
   createdAt: string
   items: SaleItemJSON[]
@@ -89,14 +114,46 @@ interface InventoryMovementJSON {
   createdAt: string
 }
 
+interface ConfigurationJSON {
+  id: string
+  retailContext: string
+  isActive: string | number | null
+}
+
+interface ConfigurationCreateJSON {
+  retailContext: string
+}
+
+interface CashRegisterJSON {
+  id: string
+  openingAmount: number
+  status: string
+  openedAt: string
+  openedByUserId: string
+}
+
+interface CashRegisterCreateJSON {
+  openingAmount: number
+  openedByUserId?: string
+}
+
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
   productFindById(id: string): Promise<ProductJSON | null>
   productFindBySku(sku: string): Promise<ProductJSON | null>
+  productListDeleted(): Promise<ProductJSON[]>
   productSave(data: ProductJSON): Promise<void>
   productDelete(id: string): Promise<void>
+  productRestore(id: string, stock: number): Promise<void>
   productTypeList(): Promise<ProductTypeJSON[]>
+  productTypeCreate(data: ProductTypeCreateJSON): Promise<void>;
+  productTypeUpdate(data: ProductTypeUpdateJSON): Promise<void>;
+  productTypeDelete(id: string): Promise<void>;
+  roleList(): Promise<RoleJSON[]>;
+  roleCreate(data: RoleCreateJSON): Promise<void>;
+  roleUpdate(data: RoleUpdateJSON): Promise<void>;
+  roleDelete(id: string): Promise<void>;
   providerList(): Promise<ProviderJSON[]>
   providerSave(data: ProviderCreateJSON): Promise<void>
   providerUpdate(data: ProviderUpdateJSON): Promise<void>
@@ -117,6 +174,16 @@ interface ElectronAPI {
   // Inventory Movements
   inventoryMovementSave(data: InventoryMovementJSON): Promise<void>
   inventoryMovementListByProduct(productId: string): Promise<InventoryMovementJSON[]>
+
+  // App Configuration
+  configurationListContexts(): Promise<string[]>
+  configurationGet(): Promise<ConfigurationJSON | null>
+  configurationIsSetupComplete(): Promise<boolean>
+  configurationSaveInitial(data: ConfigurationCreateJSON): Promise<ConfigurationJSON>
+
+  // Cash Register
+  cashRegisterGetOpen(): Promise<CashRegisterJSON | null>
+  cashRegisterOpen(data: CashRegisterCreateJSON): Promise<CashRegisterJSON>
 }
 
 declare global {
