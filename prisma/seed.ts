@@ -5,6 +5,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
+    // Limpiar métodos de pago anteriores
+  await prisma.payment_methods.deleteMany();
+  console.log('🧹 Métodos de pago limpiados');
+
   // Limpiar datos existentes (opcional - comentar si no quieres borrar)
   // await prisma.sale_item.deleteMany();
   // await prisma.sale.deleteMany();
@@ -136,59 +140,122 @@ async function main() {
   console.log('✅ Productos creados');
 
   // 5. Crear movimientos de inventario
-  await prisma.inventory_movement.create({
-    data: {
-      id: 'inv_movement_001',
-      product_id: productCoke.id,
-      type: 'IN',
-      quantity: 2,
-      created_at: new Date().toISOString(),
-    },
+  await prisma.inventory_movement.upsert({
+    where: { id: 'inv_movement_001' },
+    update: {},
+    create: {
+    id: 'inv_movement_001',
+    product_id: productCoke.id,
+    type: 'IN',
+    quantity: 2,
+    created_at: new Date().toISOString(),
+  },
   });
 
-  await prisma.inventory_movement.create({
-    data: {
-      id: 'inv_movement_002',
-      product_id: productBread.id,
-      type: 'OUT',
-      quantity: 1,
-      created_at: new Date().toISOString(),
-    },
+  await prisma.inventory_movement.upsert({
+    where: { id: 'inv_movement_002' },
+    update: {},
+    create: {
+    id: 'inv_movement_002',
+    product_id: productBread.id,
+    type: 'OUT',
+    quantity: 1,
+    created_at: new Date().toISOString(),
+  },
   });
 
   console.log('✅ Movimientos de inventario creados');
 
-  // 6. Crear venta de ejemplo
-  const sale = await prisma.sale.create({
-    data: {
-      id: 'sale_001',
-      user_id: userCashier.id,
-      total: 163.5,
-      created_at: new Date().toISOString(),
+  // Crear caja registradora
+  await prisma.cash_register.upsert({
+    where: { id: 'cash_register_001' },
+    update: {},
+    create: {
+      id: 'cash_register_001',
+      opening_amount: 500,
+      status: 'open',
+      opened_at: new Date().toISOString(),
+      opened_by_user_id: 'user_cashier_001',
     },
   });
+  console.log('✅ Caja registradora creada');
 
-  await prisma.sale_item.create({
-    data: {
+  // 6. Crear venta de ejemplo
+  const sale = await prisma.sale.upsert({
+  where: { id: 'sale_001' },
+  update: {},
+  create: {
+    id: 'sale_001',
+    user_id: userCashier.id,
+    cash_register_id: 'cash_register_001',
+    total: 163.5,
+    created_at: new Date().toISOString(),
+  },
+});
+
+  await prisma.sale_item.upsert({
+    where: { id: 'sale_item_001' },
+    update: {},
+    create: {
       id: 'sale_item_001',
       sale_id: sale.id,
       product_id: productCoke.id,
       quantity: 5,
       price: 15.5,
     },
-  });
+});
 
-  await prisma.sale_item.create({
-    data: {
-      id: 'sale_item_002',
-      sale_id: sale.id,
-      product_id: productCoffee.id,
-      quantity: 2,
-      price: 32.25,
-    },
-  });
+await prisma.sale_item.upsert({
+  where: { id: 'sale_item_002' },
+  update: {},
+  create: {
+    id: 'sale_item_002',
+    sale_id: sale.id,
+    product_id: productCoffee.id,
+    quantity: 2,
+    price: 32.25,
+  },
+});
+  // 7. Crear métodos de pago
+await prisma.payment_methods.upsert({
+  where: { id: 'cash' },
+  update: {},
+  create: {
+    id: 'cash',
+    method: 'cash',
+    is_cash: 1,
+    is_active: 1,
+    display_order: 1,
+  },
+});
 
-  console.log('✅ Venta de ejemplo creada');
+await prisma.payment_methods.upsert({
+  where: { id: 'card' },
+  update: {},
+  create: {
+    id: 'card',
+    method: 'card',
+    is_cash: 0,
+    is_active: 1,
+    display_order: 2,
+  },
+});
+
+await prisma.payment_methods.upsert({
+  where: { id: 'transfer' },
+  update: {},
+  create: {
+    id: 'transfer',
+    method: 'transfer',
+    is_cash: 0,
+    is_active: 1,
+    display_order: 3,
+  },
+});
+
+console.log('✅ Métodos de pago creados');
+
+console.log('✅ Venta de ejemplo creada');
 
   console.log('🎉 Seed completado exitosamente!');
 }
