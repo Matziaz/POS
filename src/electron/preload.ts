@@ -229,6 +229,12 @@ const electronAPI = {
     ipcRenderer.invoke("cashRegister:getOpen"),
   cashRegisterOpen: (data: CashRegisterCreateJSON): Promise<CashRegisterJSON> =>
     ipcRenderer.invoke("cashRegister:open", data),
+
+  // Sale Payments
+  salePaymentSave: (data: any): Promise<void> =>
+     ipcRenderer.invoke("salePayment:save", data),
+  salePaymentListBySaleId: (saleId: string): Promise<any[]> =>
+     ipcRenderer.invoke("salePayment:listBySaleId", saleId),
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);

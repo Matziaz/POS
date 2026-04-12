@@ -29,6 +29,12 @@ export interface RegisterSaleLineInput {
   productSku: string
   qty: number
 }
+export interface RegisterSalePaymentInput {
+  paymentMethodId: string
+  amount: number
+  tendered?: number
+  changeDue?: number
+}
 
 interface SaleState {
   sales: SaleView[]
@@ -37,7 +43,7 @@ interface SaleState {
   selectedSale: SaleView | null
 
   fetchSales: () => Promise<void>
-  registerSale: (lines: RegisterSaleLineInput[]) => Promise<void>
+  registerSale: (lines: RegisterSaleLineInput[], payments: RegisterSalePaymentInput[]) => Promise<void>
   setSelectedSale: (sale: SaleView | null) => void
   clearError: () => void
 }
@@ -98,11 +104,11 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     }
   },
 
-  registerSale: async (lines: RegisterSaleLineInput[]) => {
+  registerSale: async (lines: RegisterSaleLineInput[], payments: RegisterSalePaymentInput[]) => {
     set({ isLoading: true, error: null })
     try {
       const saleService = getSaleService()
-      await saleService.registerSale({ lines })
+      await saleService.registerSale({ lines, payments})
       await get().fetchSales()
     } catch (err) {
       set({

@@ -2,7 +2,7 @@ import type { PosContext } from "./PosContext";
 
 export const defaultContext: PosContext = {
   name: "default",
-  defaultUserId: "user_default",
+  defaultUserId: "user_cashier_001",
   defaultProviderId: "provider_default",
 
   sku: {

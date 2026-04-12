@@ -39,6 +39,7 @@ export class Sale {
   get total() { return this.props.total; }
   get createdAt() { return this.props.createdAt; }
   get items() { return this.props.items; }
+  
 
   toJSON() {
     return { ...this.props, items: this.props.items.map((i) => i.toJSON()) };

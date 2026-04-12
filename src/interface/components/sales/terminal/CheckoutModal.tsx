@@ -10,13 +10,13 @@ import { Button } from "@interface/components/ui/button"
 import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
 import { PaymentMethodSelector, type PaymentMethod } from "./PaymentMethodSelector"
 import { CashPayment } from "./CashPayment"
-
+import type { RegisterSalePaymentInput } from "@interface/store/salesStore"
 interface CheckoutModalProps {
   isOpen: boolean
   total: number
   isSubmitting?: boolean
   onClose: () => void
-  onConfirmPayment: (method: PaymentMethod, amountReceived?: number) => void
+  onConfirmPayment: (payments: RegisterSalePaymentInput[]) => void
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -29,10 +29,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
 
   const handleConfirmPayment = (amountReceived: number) => {
-    if (selectedMethod) {
-      onConfirmPayment(selectedMethod, amountReceived)
+    if (!selectedMethod) return
+
+    const payment: RegisterSalePaymentInput = {
+      paymentMethodId: selectedMethod,
+      amount: total,
+      tendered: selectedMethod === "cash" ? amountReceived : undefined,
+      changeDue: selectedMethod === "cash" ? Math.max(0, amountReceived - total) : undefined,
     }
-  }
+      onConfirmPayment([payment])
+    }
+  
 
   const handleBackClick = () => {
     setSelectedMethod(null)
@@ -82,12 +89,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 Cancelar
               </Button>
             </>
-          ) : (
+          ) : selectedMethod === "cash" ? (
             <CashPayment
               total={total}
               onConfirm={handleConfirmPayment}
               isSubmitting={isSubmitting}
             />
+          ) : (
+            <Button
+              className="w-full"
+              onClick={() => handleConfirmPayment(total)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Procesando..." : "Confirmar Pago"}
+            </Button>
           )}
         </div>
       </DialogContent>

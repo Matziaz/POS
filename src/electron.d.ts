@@ -171,6 +171,10 @@ interface ElectronAPI {
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
 
+  // Sale Payments
+  salePaymentSave(data: any): Promise<void>
+  salePaymentListBySaleId(saleId: string): Promise<any[]>
+
   // Inventory Movements
   inventoryMovementSave(data: InventoryMovementJSON): Promise<void>
   inventoryMovementListByProduct(productId: string): Promise<InventoryMovementJSON[]>
