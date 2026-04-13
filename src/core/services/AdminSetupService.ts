@@ -13,6 +13,10 @@ export class AdminSetupService {
     return this.productTypes.list();
   }
 
+  async listDeletedProductTypes(): Promise<ProductType[]> {
+    return this.productTypes.listDeleted();
+  }
+
   async createProductType(input: { name: string }): Promise<ProductType> {
     const name = input.name?.trim();
     if (!name) throw new ValidationError("product type name is required");
@@ -65,8 +69,19 @@ export class AdminSetupService {
         `Cannot delete product type; it is used by ${usageCount} product(s)`
       );
     }
+  
 
     await this.productTypes.delete(id);
+  }
+
+  async restoreProductType(idRaw: string): Promise<void> {
+    const id = idRaw?.trim();
+    if (!id) throw new ValidationError("product type id is required");
+
+    const existing = await this.productTypes.findById(id);
+    if (!existing) throw new NotFoundError(`Product type not found for id: ${id}`);
+
+    await this.productTypes.restore(id);
   }
 
   async listRoles(): Promise<Role[]> {

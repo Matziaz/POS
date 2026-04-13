@@ -83,7 +83,6 @@ export class PrismaProductRepository implements ProductRepository {
 
   async list(): Promise<Product[]> {
     const rows = await this.db.product.findMany({
-      where: { deleted_at: null },
       orderBy: { created_at: "desc" as any },
     });
     return rows.map(toDomain);

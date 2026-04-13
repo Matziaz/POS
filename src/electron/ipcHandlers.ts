@@ -246,6 +246,11 @@ function registerProductHandlers() {
     return rows.map((row) => row.toJSON());
   });
 
+  ipcMain.handle("productType:listDeleted", async (): Promise<ProductTypeJSON[]> => {
+    const rows = await adminSetupService.listDeletedProductTypes();
+    return rows.map((row) => row.toJSON());
+  });
+
   ipcMain.handle("productType:create", async (_event, data: ProductTypeCreateJSON): Promise<void> => {
     await adminSetupService.createProductType({ name: data.name });
   });
@@ -257,6 +262,11 @@ function registerProductHandlers() {
   ipcMain.handle("productType:delete", async (_event, id: string): Promise<void> => {
     await adminSetupService.deleteProductType(id);
   });
+
+  ipcMain.handle("productType:restore", async (_event, id: string): Promise<void> => {
+    await adminSetupService.restoreProductType(id);
+  });
+
 }
 
 // ─── Sale handlers ────────────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ interface ProductJSON {
 interface ProductTypeJSON {
   id: string;
   name: string;
+  deletedAt?: string | null;
 }
 
 interface ProductTypeCreateJSON {
@@ -163,12 +164,16 @@ const electronAPI = {
     ipcRenderer.invoke("product:restore", id, stock),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
+  productTypeListDeleted: (): Promise<ProductTypeJSON[]> =>
+    ipcRenderer.invoke("productType:listDeleted"),
   productTypeCreate: (data: ProductTypeCreateJSON): Promise<void> =>
     ipcRenderer.invoke("productType:create", data),
   productTypeUpdate: (data: ProductTypeUpdateJSON): Promise<void> =>
     ipcRenderer.invoke("productType:update", data),
   productTypeDelete: (id: string): Promise<void> =>
     ipcRenderer.invoke("productType:delete", id),
+  productTypeRestore: (id: string): Promise<void> =>
+    ipcRenderer.invoke("productType:restore", id),
   roleList: (): Promise<RoleJSON[]> =>
     ipcRenderer.invoke("role:list"),
   roleCreate: (data: RoleCreateJSON): Promise<void> =>

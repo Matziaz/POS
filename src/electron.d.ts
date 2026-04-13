@@ -19,6 +19,7 @@ interface ProductJSON {
 interface ProductTypeJSON {
   id: string
   name: string
+  deletedAt?: string | null
 }
 
 interface ProductTypeCreateJSON {
@@ -147,9 +148,11 @@ interface ElectronAPI {
   productDelete(id: string): Promise<void>
   productRestore(id: string, stock: number): Promise<void>
   productTypeList(): Promise<ProductTypeJSON[]>
+  productTypeListDeleted(): Promise<ProductTypeJSON[]>
   productTypeCreate(data: ProductTypeCreateJSON): Promise<void>;
   productTypeUpdate(data: ProductTypeUpdateJSON): Promise<void>;
   productTypeDelete(id: string): Promise<void>;
+  productTypeRestore(id: string): Promise<void>;
   roleList(): Promise<RoleJSON[]>;
   roleCreate(data: RoleCreateJSON): Promise<void>;
   roleUpdate(data: RoleUpdateJSON): Promise<void>;
