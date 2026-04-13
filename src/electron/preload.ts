@@ -230,6 +230,10 @@ const electronAPI = {
   cashRegisterOpen: (data: CashRegisterCreateJSON): Promise<CashRegisterJSON> =>
     ipcRenderer.invoke("cashRegister:open", data),
 
+  // Payment Methods
+  paymentMethodListActive: (): Promise<any[]> =>
+    ipcRenderer.invoke("paymentMethod:listActive"),
+
   // Sale Payments
   salePaymentSave: (data: any): Promise<void> =>
      ipcRenderer.invoke("salePayment:save", data),
