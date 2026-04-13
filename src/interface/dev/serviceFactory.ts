@@ -11,6 +11,10 @@ import { ElectronProductRepository } from "./ElectronProductRepository";
 import { ElectronSaleRepository } from "./ElectronSaleRepository";
 import { ElectronInventoryMovementRepository } from "./ElectronInventoryMovementRepository";
 
+import { InMemorySalePaymentRepository } from "./InMemorySalePaymentRepository"
+import { ElectronSalePaymentRepository } from "./ElectronSalePaymentRepository"
+import type { SalePaymentRepository } from "@core/repositories"
+
 /**
  * Detección de entorno:
  * - Si window.electronAPI existe → estamos en Electron → usar repos IPC (Prisma corre en main process)
@@ -33,6 +37,10 @@ const inventoryMovementRepository: InventoryMovementRepository = isElectron
   ? new ElectronInventoryMovementRepository()
   : new InMemoryInventoryMovementRepository();
 
+const salePaymentRepository: SalePaymentRepository = isElectron
+  ? new ElectronSalePaymentRepository()
+  : new InMemorySalePaymentRepository();
+
 let activeContextName = defaultContext.name;
 
 if (isElectron) {
@@ -52,7 +60,7 @@ function getActiveContext() {
 }
 
 const productService = new ProductService(productRepository, inventoryMovementRepository, getActiveContext);
-const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository, getActiveContext);
+const saleService = new SaleService(productRepository, saleRepository, inventoryMovementRepository, salePaymentRepository, getActiveContext);
 
 export function getProductService(): ProductService {
   return productService;

@@ -173,6 +173,13 @@ interface ElectronAPI {
   saleCountByDateRange(fromISO: string, toISO: string): Promise<number>
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
+  
+  // Payment Methods
+  paymentMethodListActive(): Promise<any[]>
+  
+  // Sale Payments
+  salePaymentSave(data: any): Promise<void>
+  salePaymentListBySaleId(saleId: string): Promise<any[]>
 
   // Inventory Movements
   inventoryMovementSave(data: InventoryMovementJSON): Promise<void>

@@ -27,6 +27,10 @@ import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaPr
 import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
 import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
 import { PrismaCashRegisterRepository } from "../infrastructure/persistence/PrismaCashRegisterRepository";
+import { PrismaPaymentMethodRepository } from "../infrastructure/persistence/PrismaPaymentMethodRepository";
+import { PrismaSalePaymentRepository } from "../infrastructure/persistence/PrismaSalePaymentRepository";
+import { SalePayment } from "../core/entities/SalePayment";
+
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -49,6 +53,8 @@ const productTypeRepository = new PrismaProductTypeRepository(prisma);
 const roleRepository = new PrismaRoleRepository(prisma);
 const appConfigurationRepository = new PrismaAppConfigurationRepository(prisma);
 const cashRegisterRepository = new PrismaCashRegisterRepository(prisma);
+const salePaymentRepository = new PrismaSalePaymentRepository(prisma);
+const paymentMethodRepository = new PrismaPaymentMethodRepository(prisma);
 const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
 const configurationService = new ConfigurationService(appConfigurationRepository);
 
@@ -234,7 +240,7 @@ function registerProductHandlers() {
   // Force delete: elimina en transacción las dependencias y luego el producto.
   // Útil para limpiar registros del seeder o forzar borrados en entorno de desarrollo.
   ipcMain.handle("product:forceDelete", async (_event, id: string) => {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.sale_item.deleteMany({ where: { product_id: id } });
       await tx.inventory_movement.deleteMany({ where: { product_id: id } });
       await tx.product.delete({ where: { id } });
@@ -342,7 +348,7 @@ function registerContactHandlers() {
       : [];
 
     const countByProviderId = new Map<string, number>(
-      counts.map((row) => [row.provider_id, row._count.provider_id])
+      counts.map((row: any) => [row.provider_id, row._count.provider_id])
     );
 
     return providers.map((provider) => ({
@@ -401,7 +407,7 @@ function registerContactHandlers() {
       ? await prisma.role.findMany({ where: { id: { in: roleIds } } })
       : [];
     const roleTypeById = new Map<string, string>(
-      roles.map((role) => [role.id, role.type])
+      roles.map((role: any) => [role.id, role.type])
     );
 
     return users.map((user) => ({
@@ -535,6 +541,32 @@ function registerCashRegisterHandlers() {
     return created.toJSON();
   });
 }
+function registerPaymentMethodHandlers() {
+  ipcMain.handle("paymentMethod:listActive", async () => {
+     const methods = await paymentMethodRepository.listActive()
+     return methods.map((m) => m.toJSON())
+  })
+}
+
+function registerSalePaymentHandlers() {
+  ipcMain.handle("salePayment:save", async (_event, data: any) => {
+    await salePaymentRepository.save(
+      SalePayment.create({
+        id: data.id,
+        saleId: data.saleId,
+        paymentMethodId: data.paymentMethodId,
+        amount: data.amount,
+        tendered: data.tendered ?? null,
+        changeDue: data.changeDue ?? null,
+      })
+    );
+  });
+
+  ipcMain.handle("salePayment:listBySaleId", async (_event, saleId: string) => {
+    const payments = await salePaymentRepository.listBySaleId(saleId);
+    return payments.map((payment) => payment.toJSON());
+  });
+}
 
 // ─── Register all ─────────────────────────────────────────────────────────────
 
@@ -545,7 +577,8 @@ export function registerAllIpcHandlers() {
   registerContactHandlers();
   registerConfigurationHandlers();
   registerCashRegisterHandlers();
-
+  registerSalePaymentHandlers();
+  registerPaymentMethodHandlers();
   console.log("[IPC] All database handlers registered");
 }
 
