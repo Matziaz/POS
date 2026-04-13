@@ -28,14 +28,14 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         <button
           key={method.id}
           type="button"
-          disabled={disabled || method.id !== "cash"}
+          disabled={disabled || method.id === "voucher"}
           onClick={() => onSelect(method.id)}
           className={cn(
             "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all",
             selected === method.id
               ? "border-primary bg-primary/10"
               : "border-border bg-background hover:border-primary/50",
-            method.id !== "cash" && "cursor-not-allowed opacity-50",
+            method.id === "voucher" && "cursor-not-allowed opacity-50",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >

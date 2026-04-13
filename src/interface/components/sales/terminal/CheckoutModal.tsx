@@ -10,13 +10,13 @@ import { Button } from "@interface/components/ui/button"
 import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
 import { PaymentMethodSelector, type PaymentMethod } from "./PaymentMethodSelector"
 import { CashPayment } from "./CashPayment"
-
+import type { RegisterSalePaymentInput } from "@interface/store/salesStore"
 interface CheckoutModalProps {
   isOpen: boolean
   total: number
   isSubmitting?: boolean
   onClose: () => void
-  onConfirmPayment: (method: PaymentMethod, amountReceived?: number) => void
+  onConfirmPayment: (payments: RegisterSalePaymentInput[]) => void
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -27,12 +27,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onConfirmPayment,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
+  const [selectedMethodIsCash, setSelectedMethodIsCash] = useState<boolean>(false)
+  
+  const handleSelectMethod = async (method: PaymentMethod) => {
+      setSelectedMethod(method)
+      const methods = await window.electronAPI?.paymentMethodListActive?.()
+      const found = methods?.find((m: any) => m.id === method)
+      setSelectedMethodIsCash(found?.isCash === 1)
+  }
 
   const handleConfirmPayment = (amountReceived: number) => {
-    if (selectedMethod) {
-      onConfirmPayment(selectedMethod, amountReceived)
+    if (!selectedMethod) return
+
+    const payment: RegisterSalePaymentInput = {
+      paymentMethodId: selectedMethod,
+      amount: total,
+      tendered: selectedMethodIsCash ? amountReceived : undefined,
+      changeDue: selectedMethodIsCash ? Math.max(0, amountReceived - total) : undefined,
     }
-  }
+      onConfirmPayment([payment])
+    }
+  
 
   const handleBackClick = () => {
     setSelectedMethod(null)
@@ -60,7 +75,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         <DialogHeader>
           <DialogTitle>
-            {selectedMethod ? "Pago en Efectivo" : "Seleccionar Método de Pago"}
+            {selectedMethod ? "Confirmar Pago" : "Seleccionar Método de Pago"}
           </DialogTitle>
         </DialogHeader>
 
@@ -76,18 +91,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Selector de método o formulario de efectivo */}
           {!selectedMethod ? (
             <>
-              <PaymentMethodSelector selected={selectedMethod} onSelect={setSelectedMethod} />
+              <PaymentMethodSelector selected={selectedMethod} onSelect={handleSelectMethod} />
 
               <Button variant="outline" className="w-full" onClick={handleClose} disabled={isSubmitting}>
                 Cancelar
               </Button>
             </>
-          ) : (
+          ) : selectedMethodIsCash ? (
             <CashPayment
               total={total}
               onConfirm={handleConfirmPayment}
               isSubmitting={isSubmitting}
             />
+          ) : (
+            <Button
+              className="w-full"
+              onClick={() => handleConfirmPayment(total)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Procesando..." : "Confirmar Pago"}
+            </Button>
           )}
         </div>
       </DialogContent>

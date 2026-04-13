@@ -5,6 +5,7 @@ import { Button } from "@interface/components/ui/button"
 import { Input } from "@interface/components/ui/input"
 import { useProducts } from "@interface/hooks/useProducts"
 import { useSales } from "@interface/hooks/useSales"
+import type { RegisterSalePaymentInput } from "@interface/store/salesStore"
 import { useSaleSessionStore } from "@interface/store/saleSessionStore"
 import { DEFAULT_USER_ID } from "@shared/constants/constants"
 import {
@@ -138,16 +139,17 @@ export const SalesTerminalPage: React.FC = () => {
     setShowCheckoutModal(true)
   }
 
-  const handleConfirmPayment = async (_method: PaymentMethod, _amountReceived?: number) => {
+  const handleConfirmPayment = async (payments: RegisterSalePaymentInput[]) => {
     try {
       setCheckoutError(null)
 
-      // Por ahora solo efectivo, registramos la venta
+      
       await registerSale(
         lines.map((line) => ({
           productSku: line.productSku,
           qty: line.qty,
-        }))
+        })),
+        payments
       )
 
       setShowCheckoutModal(false)

@@ -1,6 +1,6 @@
-import { Sale, InventoryMovement } from "../entities";
+import { Sale, InventoryMovement, SalePayment } from "../entities";
 import { NotFoundError, ValidationError } from "../errors";
-import type { ProductRepository, SaleRepository} from "../repositories";
+import type { ProductRepository, SaleRepository,SalePaymentRepository} from "../repositories";
 import type { InventoryMovementRepository } from "../repositories/InventoryMovementRepository";
 import { newId } from "./id";
 import { DEFAULT_USER_ID } from "../../shared/constants/constants";
@@ -12,6 +12,7 @@ export class SaleService {
     private readonly products: ProductRepository,
     private readonly sales: SaleRepository,
     private readonly movements: InventoryMovementRepository,
+    private readonly salePayments: SalePaymentRepository,
     private readonly getContext: () => PosContext = () => defaultContext
   ) {}
 
@@ -19,6 +20,12 @@ export class SaleService {
     userId?: string;
     cashRegisterId?: string;
     lines: { productSku: string; qty: number }[];
+    payments : {
+      paymentMethodId: string;
+      amount: number;
+      tendered?: number ;
+      changeDue?: number ;
+    }[];
   }): Promise<Sale> {
     const context = this.getContext();
     const userId = input.userId?.trim() || context.defaultUserId || DEFAULT_USER_ID;
@@ -60,6 +67,18 @@ export class SaleService {
 
     const sale = Sale.create({ id: saleId, userId, cashRegisterId, items });
     await this.sales.save(sale);
+
+    for (const payment of input.payments) {
+      const salePayment = SalePayment.create({
+        id: newId(),
+        saleId : sale.id,
+        paymentMethodId: payment.paymentMethodId,
+        amount: payment.amount,
+        tendered: payment.tendered ?? null,
+        changeDue: payment.changeDue ?? null,
+      });
+      await this.salePayments.save(salePayment);
+    }
     return sale;
   }
 }
