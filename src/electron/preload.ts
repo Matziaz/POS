@@ -279,6 +279,10 @@ const electronAPI = {
   cashClosureListByDateRange: (fromISO: string, toISO: string): Promise<CashClosureJSON[]> =>
     ipcRenderer.invoke("cashClosure:listByDateRange", fromISO, toISO),
 
+  // Payment Methods
+  paymentMethodListActive: (): Promise<any[]> =>
+    ipcRenderer.invoke("paymentMethod:listActive"),
+
   // Sale Payments
   salePaymentSave: (data: SalePaymentJSON): Promise<void> =>
      ipcRenderer.invoke("salePayment:save", data),

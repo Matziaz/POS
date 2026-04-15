@@ -27,10 +27,12 @@ import { PrismaProviderRepository } from "../infrastructure/persistence/PrismaPr
 import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRepository";
 import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
 import { PrismaCashRegisterRepository } from "../infrastructure/persistence/PrismaCashRegisterRepository";
+import { PrismaPaymentMethodRepository } from "../infrastructure/persistence/PrismaPaymentMethodRepository";
 import { PrismaCashClosureRepository } from "../infrastructure/persistence/PrismaCashClosureRepository";
 import { PrismaCashClosurePaymentBreakdownRepository } from "../infrastructure/persistence/PrismaCashClosurePaymentBreakdownRepository";
 import { PrismaSalePaymentRepository } from "../infrastructure/persistence/PrismaSalePaymentRepository";
 import { SalePayment } from "../core/entities/SalePayment";
+
 
 // Ruta absoluta a la base de datos SQLite.
 // En dev: <proyecto>/prisma/pos.db
@@ -56,6 +58,7 @@ const cashRegisterRepository = new PrismaCashRegisterRepository(prisma);
 const cashClosureRepository = new PrismaCashClosureRepository(prisma);
 const cashClosureBreakdownRepository = new PrismaCashClosurePaymentBreakdownRepository(prisma);
 const salePaymentRepository = new PrismaSalePaymentRepository(prisma);
+const paymentMethodRepository = new PrismaPaymentMethodRepository(prisma);
 const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
 const configurationService = new ConfigurationService(appConfigurationRepository);
 const cashClosureService = new CashClosureService(
@@ -568,6 +571,12 @@ function registerCashRegisterHandlers() {
     return created.toJSON();
   });
 }
+function registerPaymentMethodHandlers() {
+  ipcMain.handle("paymentMethod:listActive", async () => {
+     const methods = await paymentMethodRepository.listActive()
+     return methods.map((m) => m.toJSON())
+  })
+}
 
 function registerSalePaymentHandlers() {
   ipcMain.handle("salePayment:save", async (_event, data: any) => {
@@ -621,6 +630,7 @@ export function registerAllIpcHandlers() {
   registerConfigurationHandlers();
   registerCashRegisterHandlers();
   registerSalePaymentHandlers();
+  registerPaymentMethodHandlers();
   registerCashClosureHandlers();
   console.log("[IPC] All database handlers registered");
 }

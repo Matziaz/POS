@@ -213,7 +213,10 @@ interface ElectronAPI {
   saleCountByDateRange(fromISO: string, toISO: string): Promise<number>
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
-
+  
+  // Payment Methods
+  paymentMethodListActive(): Promise<any[]>
+  
   // Cash Closure
   cashClosureClose(data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON>
   cashClosureListByDateRange(fromISO: string, toISO: string): Promise<CashClosureJSON[]>

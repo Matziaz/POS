@@ -27,6 +27,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onConfirmPayment,
 }) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
+  const [selectedMethodIsCash, setSelectedMethodIsCash] = useState<boolean>(false)
+  
+  const handleSelectMethod = async (method: PaymentMethod) => {
+      setSelectedMethod(method)
+      const methods = await window.electronAPI?.paymentMethodListActive?.()
+      const found = methods?.find((m: any) => m.id === method)
+      setSelectedMethodIsCash(found?.isCash === 1)
+  }
 
   const handleConfirmPayment = (amountReceived: number) => {
     if (!selectedMethod) return
@@ -34,8 +42,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const payment: RegisterSalePaymentInput = {
       paymentMethodId: selectedMethod,
       amount: total,
-      tendered: selectedMethod === "cash" ? amountReceived : undefined,
-      changeDue: selectedMethod === "cash" ? Math.max(0, amountReceived - total) : undefined,
+      tendered: selectedMethodIsCash ? amountReceived : undefined,
+      changeDue: selectedMethodIsCash ? Math.max(0, amountReceived - total) : undefined,
     }
       onConfirmPayment([payment])
     }
@@ -67,7 +75,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
         <DialogHeader>
           <DialogTitle>
-            {selectedMethod ? "Pago en Efectivo" : "Seleccionar Método de Pago"}
+            {selectedMethod ? "Confirmar Pago" : "Seleccionar Método de Pago"}
           </DialogTitle>
         </DialogHeader>
 
@@ -83,13 +91,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Selector de método o formulario de efectivo */}
           {!selectedMethod ? (
             <>
-              <PaymentMethodSelector selected={selectedMethod} onSelect={setSelectedMethod} />
+              <PaymentMethodSelector selected={selectedMethod} onSelect={handleSelectMethod} />
 
               <Button variant="outline" className="w-full" onClick={handleClose} disabled={isSubmitting}>
                 Cancelar
               </Button>
             </>
-          ) : selectedMethod === "cash" ? (
+          ) : selectedMethodIsCash ? (
             <CashPayment
               total={total}
               onConfirm={handleConfirmPayment}
