@@ -143,6 +143,49 @@ interface CashRegisterCreateJSON {
   openedByUserId?: string;
 }
 
+interface SalePaymentJSON {
+  id: string;
+  saleId: string;
+  paymentMethodId: string;
+  amount: number;
+  tendered: number | null;
+  changeDue: number | null;
+}
+
+interface CashClosureJSON {
+  id: string;
+  folio: string;
+  businessDate: string;
+  openedAt: string;
+  closedAt: string;
+  salesCount: number;
+  totalAmount: number;
+  isFinal: number;
+  userId: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface CashClosurePaymentBreakdownJSON {
+  id: string;
+  cashClosureId: string;
+  paymentMethodId: string;
+  totalAmount: number;
+}
+
+interface CashClosureCloseJSON {
+  closedAt?: string;
+  businessDate?: string;
+  userId?: string;
+  notes?: string;
+  isFinal?: boolean;
+}
+
+interface CashClosureCloseResultJSON {
+  closure: CashClosureJSON;
+  breakdown: CashClosurePaymentBreakdownJSON[];
+}
+
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
 
 const electronAPI = {
@@ -230,14 +273,20 @@ const electronAPI = {
   cashRegisterOpen: (data: CashRegisterCreateJSON): Promise<CashRegisterJSON> =>
     ipcRenderer.invoke("cashRegister:open", data),
 
+  // Cash Closure
+  cashClosureClose: (data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON> =>
+    ipcRenderer.invoke("cashClosure:close", data),
+  cashClosureListByDateRange: (fromISO: string, toISO: string): Promise<CashClosureJSON[]> =>
+    ipcRenderer.invoke("cashClosure:listByDateRange", fromISO, toISO),
+
   // Payment Methods
   paymentMethodListActive: (): Promise<any[]> =>
     ipcRenderer.invoke("paymentMethod:listActive"),
 
   // Sale Payments
-  salePaymentSave: (data: any): Promise<void> =>
+  salePaymentSave: (data: SalePaymentJSON): Promise<void> =>
      ipcRenderer.invoke("salePayment:save", data),
-  salePaymentListBySaleId: (saleId: string): Promise<any[]> =>
+  salePaymentListBySaleId: (saleId: string): Promise<SalePaymentJSON[]> =>
      ipcRenderer.invoke("salePayment:listBySaleId", saleId),
 };
 

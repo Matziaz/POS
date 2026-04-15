@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, Package, ScanLine, ShoppingCart, Contact,  ChartNoAxesCombined, ShieldCheck} from "lucide-react"
+import { BarChart3, Package, ScanLine, ShoppingCart, Contact,  ChartNoAxesCombined, ShieldCheck, ReceiptText } from "lucide-react"
 
 export interface SidebarMenuItem {
 	to: string
@@ -39,6 +39,11 @@ export const sidebarMenuItems: SidebarMenuItem[] = [
 		label: "Historial",
 		icon: ShoppingCart,
 		end: true,
+	},
+	{
+		to: "/caja/cierre",
+		label: "Corte Caja",
+		icon: ReceiptText,
 	},
 	{
 		to: "/contactos",

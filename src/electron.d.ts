@@ -137,6 +137,49 @@ interface CashRegisterCreateJSON {
   openedByUserId?: string
 }
 
+interface SalePaymentJSON {
+  id: string
+  saleId: string
+  paymentMethodId: string
+  amount: number
+  tendered: number | null
+  changeDue: number | null
+}
+
+interface CashClosureJSON {
+  id: string
+  folio: string
+  businessDate: string
+  openedAt: string
+  closedAt: string
+  salesCount: number
+  totalAmount: number
+  isFinal: number
+  userId: string | null
+  notes: string | null
+  createdAt: string
+}
+
+interface CashClosurePaymentBreakdownJSON {
+  id: string
+  cashClosureId: string
+  paymentMethodId: string
+  totalAmount: number
+}
+
+interface CashClosureCloseJSON {
+  closedAt?: string
+  businessDate?: string
+  userId?: string
+  notes?: string
+  isFinal?: boolean
+}
+
+interface CashClosureCloseResultJSON {
+  closure: CashClosureJSON
+  breakdown: CashClosurePaymentBreakdownJSON[]
+}
+
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
@@ -174,9 +217,13 @@ interface ElectronAPI {
   // Payment Methods
   paymentMethodListActive(): Promise<any[]>
   
+  // Cash Closure
+  cashClosureClose(data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON>
+  cashClosureListByDateRange(fromISO: string, toISO: string): Promise<CashClosureJSON[]>
+
   // Sale Payments
-  salePaymentSave(data: any): Promise<void>
-  salePaymentListBySaleId(saleId: string): Promise<any[]>
+  salePaymentSave(data: SalePaymentJSON): Promise<void>
+  salePaymentListBySaleId(saleId: string): Promise<SalePaymentJSON[]>
 
   // Inventory Movements
   inventoryMovementSave(data: InventoryMovementJSON): Promise<void>

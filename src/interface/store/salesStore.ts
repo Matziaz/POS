@@ -36,6 +36,10 @@ export interface RegisterSalePaymentInput {
   changeDue?: number
 }
 
+export interface RegisterSaleOptions {
+  cashRegisterId?: string
+}
+
 interface SaleState {
   sales: SaleView[]
   isLoading: boolean
@@ -43,7 +47,11 @@ interface SaleState {
   selectedSale: SaleView | null
 
   fetchSales: () => Promise<void>
-  registerSale: (lines: RegisterSaleLineInput[], payments: RegisterSalePaymentInput[]) => Promise<void>
+  registerSale: (
+    lines: RegisterSaleLineInput[],
+    payments: RegisterSalePaymentInput[],
+    options?: RegisterSaleOptions
+  ) => Promise<void>
   setSelectedSale: (sale: SaleView | null) => void
   clearError: () => void
 }
@@ -104,11 +112,19 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     }
   },
 
-  registerSale: async (lines: RegisterSaleLineInput[], payments: RegisterSalePaymentInput[]) => {
+  registerSale: async (
+    lines: RegisterSaleLineInput[],
+    payments: RegisterSalePaymentInput[],
+    options?: RegisterSaleOptions
+  ) => {
     set({ isLoading: true, error: null })
     try {
       const saleService = getSaleService()
-      await saleService.registerSale({ lines, payments})
+      await saleService.registerSale({
+        lines,
+        payments,
+        cashRegisterId: options?.cashRegisterId,
+      })
       await get().fetchSales()
     } catch (err) {
       set({

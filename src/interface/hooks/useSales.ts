@@ -7,14 +7,23 @@
 
 import { useEffect } from "react"
 import { useSaleStore } from "@interface/store/salesStore"
-import type { SaleView, RegisterSaleLineInput,RegisterSalePaymentInput } from "@interface/store/salesStore"
+import type {
+  SaleView,
+  RegisterSaleLineInput,
+  RegisterSalePaymentInput,
+  RegisterSaleOptions,
+} from "@interface/store/salesStore"
 
 export interface UseSalesReturn {
   sales: SaleView[]
   isLoading: boolean
   error: string | null
   selectedSale: SaleView | null
-  registerSale: (lines: RegisterSaleLineInput[],payments:RegisterSalePaymentInput[]) => Promise<void>
+  registerSale: (
+    lines: RegisterSaleLineInput[],
+    payments: RegisterSalePaymentInput[],
+    options?: RegisterSaleOptions
+  ) => Promise<void>
   selectSale: (sale: SaleView | null) => void
   clearError: () => void
   refetch: () => Promise<void>
