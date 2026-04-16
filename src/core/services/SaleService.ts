@@ -12,7 +12,10 @@ export class SaleService {
     private readonly products: ProductRepository,
     private readonly sales: SaleRepository,
     private readonly movements: InventoryMovementRepository,
-    private readonly salePayments: SalePaymentRepository,
+    private readonly salePayments: SalePaymentRepository = {
+      save: async () => undefined,
+      listBySaleId: async () => [],
+    },
     private readonly getContext: () => PosContext = () => defaultContext
   ) {}
 
@@ -31,8 +34,10 @@ export class SaleService {
     const userId = input.userId?.trim() || context.defaultUserId || DEFAULT_USER_ID;
     const cashRegisterId = input.cashRegisterId?.trim() || undefined;
     const lines = input.lines;
+    const payments = input.payments;
 
     if(!lines.length) throw new ValidationError("Sale must have at least one line");
+    if (!payments.length) throw new ValidationError("Sale must have at least one payment");
 
     const saleId = newId();
 
@@ -66,9 +71,30 @@ export class SaleService {
     }
 
     const sale = Sale.create({ id: saleId, userId, cashRegisterId, items });
+
+    const paymentsTotal = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    if (Math.abs(paymentsTotal - sale.total) > 0.0001) {
+      throw new ValidationError("Payments total must match sale total");
+    }
+
+    for (const payment of payments) {
+      if (!payment.paymentMethodId?.trim()) {
+        throw new ValidationError("Payment method is required");
+      }
+      if (typeof payment.amount !== "number" || !Number.isFinite(payment.amount) || payment.amount < 0) {
+        throw new ValidationError("Payment amount must be a non-negative number");
+      }
+      const normalizedMethod = payment.paymentMethodId.trim().toLowerCase();
+      if (normalizedMethod === "cash") {
+        if (typeof payment.tendered !== "number" || payment.tendered < payment.amount) {
+          throw new ValidationError("Cash tendered must be greater than or equal to payment amount");
+        }
+      }
+    }
+
     await this.sales.save(sale);
 
-    for (const payment of input.payments) {
+    for (const payment of payments) {
       const salePayment = SalePayment.create({
         id: newId(),
         saleId : sale.id,

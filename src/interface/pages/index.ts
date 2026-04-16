@@ -7,6 +7,7 @@
 export { InventoryPage } from './InventoryPage'
 export { SalesPage } from './SalesPage'
 export { SalesTerminalPage } from './SalesTerminalPage'
+export { CashClosurePage } from './CashClosurePage'
 export { DashboardPage } from './DashboardPage'
 export { ReportsPage } from './ReportsPage'
 export { ContactsPage } from './ContactsPage'

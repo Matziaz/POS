@@ -42,7 +42,22 @@ export const SalesPage: React.FC = () => {
   }
 
   const handleRegisterSale = async (lines: { productSku: string; qty: number }[]) => {
-    await registerSale(lines)
+    const total = lines.reduce((sum, line) => {
+      const product = products.find((item) => item.sku === line.productSku)
+      if (!product) {
+        throw new Error(`No se encontro el producto para SKU ${line.productSku}`)
+      }
+      return sum + product.price * line.qty
+    }, 0)
+
+    await registerSale(lines, [
+      {
+        paymentMethodId: "cash",
+        amount: total,
+        tendered: total,
+        changeDue: 0,
+      },
+    ])
     await refetchProducts()
   }
 

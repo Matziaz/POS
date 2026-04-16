@@ -149,7 +149,8 @@ export const SalesTerminalPage: React.FC = () => {
           productSku: line.productSku,
           qty: line.qty,
         })),
-        payments
+        payments,
+        { cashRegisterId: cashRegister.id }
       )
 
       setShowCheckoutModal(false)

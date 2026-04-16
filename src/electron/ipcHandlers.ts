@@ -16,7 +16,7 @@ import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
 import { Provider, User } from "../core/entities";
 import { CashRegister } from "../core/entities/CashRegister";
-import { AdminSetupService, ConfigurationService } from "../core/services";
+import { AdminSetupService, CashClosureService, ConfigurationService } from "../core/services";
 import { newId } from "../core/services/id";
 import { PrismaProductRepository } from "../infrastructure/persistence/PrismaProductRepository";
 import { PrismaProductTypeRepository } from "../infrastructure/persistence/PrismaProductTypeRepository";
@@ -28,6 +28,8 @@ import { PrismaUserRepository } from "../infrastructure/persistence/PrismaUserRe
 import { PrismaAppConfigurationRepository } from "../infrastructure/persistence/PrismaAppConfigurationRepository";
 import { PrismaCashRegisterRepository } from "../infrastructure/persistence/PrismaCashRegisterRepository";
 import { PrismaPaymentMethodRepository } from "../infrastructure/persistence/PrismaPaymentMethodRepository";
+import { PrismaCashClosureRepository } from "../infrastructure/persistence/PrismaCashClosureRepository";
+import { PrismaCashClosurePaymentBreakdownRepository } from "../infrastructure/persistence/PrismaCashClosurePaymentBreakdownRepository";
 import { PrismaSalePaymentRepository } from "../infrastructure/persistence/PrismaSalePaymentRepository";
 import { SalePayment } from "../core/entities/SalePayment";
 
@@ -53,10 +55,19 @@ const productTypeRepository = new PrismaProductTypeRepository(prisma);
 const roleRepository = new PrismaRoleRepository(prisma);
 const appConfigurationRepository = new PrismaAppConfigurationRepository(prisma);
 const cashRegisterRepository = new PrismaCashRegisterRepository(prisma);
+const cashClosureRepository = new PrismaCashClosureRepository(prisma);
+const cashClosureBreakdownRepository = new PrismaCashClosurePaymentBreakdownRepository(prisma);
 const salePaymentRepository = new PrismaSalePaymentRepository(prisma);
 const paymentMethodRepository = new PrismaPaymentMethodRepository(prisma);
 const adminSetupService = new AdminSetupService(productTypeRepository, roleRepository);
 const configurationService = new ConfigurationService(appConfigurationRepository);
+const cashClosureService = new CashClosureService(
+  saleRepository,
+  salePaymentRepository,
+  cashClosureRepository,
+  cashClosureBreakdownRepository,
+  cashRegisterRepository,
+);
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
 
@@ -192,6 +203,35 @@ interface CashRegisterJSON {
 interface CashRegisterCreateJSON {
   openingAmount: number;
   openedByUserId?: string;
+}
+
+interface CashClosureJSON {
+  id: string;
+  folio: string;
+  businessDate: string;
+  openedAt: string;
+  closedAt: string;
+  salesCount: number;
+  totalAmount: number;
+  isFinal: number;
+  userId: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+interface CashClosurePaymentBreakdownJSON {
+  id: string;
+  cashClosureId: string;
+  paymentMethodId: string;
+  totalAmount: number;
+}
+
+interface CashClosureCloseJSON {
+  closedAt?: string;
+  businessDate?: string;
+  userId?: string;
+  notes?: string;
+  isFinal?: boolean;
 }
 
 // ─── Product handlers ─────────────────────────────────────────────────────────
@@ -568,6 +608,28 @@ function registerSalePaymentHandlers() {
   });
 }
 
+function registerCashClosureHandlers() {
+  ipcMain.handle("cashClosure:close", async (_event, data: CashClosureCloseJSON) => {
+    const result = await cashClosureService.closeDaily({
+      closedAt: data.closedAt,
+      businessDate: data.businessDate,
+      userId: data.userId,
+      notes: data.notes,
+      isFinal: data.isFinal,
+    });
+
+    return {
+      closure: result.closure.toJSON() as CashClosureJSON,
+      breakdown: result.breakdown.map((item) => item.toJSON()) as CashClosurePaymentBreakdownJSON[],
+    };
+  });
+
+  ipcMain.handle("cashClosure:listByDateRange", async (_event, fromISO: string, toISO: string) => {
+    const rows = await cashClosureRepository.listByBusinessDateRange(fromISO, toISO);
+    return rows.map((row) => row.toJSON() as CashClosureJSON);
+  });
+}
+
 // ─── Register all ─────────────────────────────────────────────────────────────
 
 export function registerAllIpcHandlers() {
@@ -579,6 +641,7 @@ export function registerAllIpcHandlers() {
   registerCashRegisterHandlers();
   registerSalePaymentHandlers();
   registerPaymentMethodHandlers();
+  registerCashClosureHandlers();
   console.log("[IPC] All database handlers registered");
 }
 
