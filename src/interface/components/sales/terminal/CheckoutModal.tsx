@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState,useEffect  } from "react"
 import { ArrowLeft } from "lucide-react"
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
 } from "@interface/components/ui/dialog"
 import { Button } from "@interface/components/ui/button"
 import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
-import { PaymentMethodSelector, type PaymentMethod } from "./PaymentMethodSelector"
+import { PaymentMethodSelector, type PaymentMethod,  type PaymentMethodFromDB } from "./PaymentMethodSelector"
 import { CashPayment } from "./CashPayment"
 import type { RegisterSalePaymentInput } from "@interface/store/salesStore"
 interface CheckoutModalProps {
@@ -28,6 +28,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
   const [selectedMethodIsCash, setSelectedMethodIsCash] = useState<boolean>(false)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodFromDB[]>([])
+
+  useEffect(() => {
+  if (!isOpen) return
+  const loadMethods = async () => {
+    const methods = await window.electronAPI?.paymentMethodListActive?.()
+    setPaymentMethods(methods ?? [])
+  }
+  void loadMethods()
+}, [isOpen])
   
   const handleSelectMethod = async (method: PaymentMethod) => {
       setSelectedMethod(method)
@@ -46,6 +56,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       changeDue: selectedMethodIsCash ? Math.max(0, amountReceived - total) : undefined,
     }
       onConfirmPayment([payment])
+      setSelectedMethod(null)
+      setSelectedMethodIsCash(false)
     }
   
 
@@ -55,6 +67,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleClose = () => {
     setSelectedMethod(null)
+    setSelectedMethodIsCash(false)
     onClose()
   }
 
@@ -73,8 +86,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </Button>
         )}
 
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader className="text-center">
+          <DialogTitle className="text-center">
             {selectedMethod ? "Confirmar Pago" : "Seleccionar Método de Pago"}
           </DialogTitle>
         </DialogHeader>
@@ -91,7 +104,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Selector de método o formulario de efectivo */}
           {!selectedMethod ? (
             <>
-              <PaymentMethodSelector selected={selectedMethod} onSelect={handleSelectMethod} />
+              <PaymentMethodSelector selected={selectedMethod} onSelect={handleSelectMethod} methods={paymentMethods} />
 
               <Button variant="outline" className="w-full" onClick={handleClose} disabled={isSubmitting}>
                 Cancelar
