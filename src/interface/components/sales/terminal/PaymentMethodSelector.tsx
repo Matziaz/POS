@@ -17,6 +17,7 @@ const methods: Array<{ id: PaymentMethod; label: string; icon: React.ReactNode }
   { id: "voucher", label: "Vales", icon: <Tag className="h-6 w-6" /> },
 ]
 
+
 export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   selected,
   onSelect,

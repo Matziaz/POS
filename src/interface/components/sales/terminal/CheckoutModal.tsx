@@ -46,6 +46,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       changeDue: selectedMethodIsCash ? Math.max(0, amountReceived - total) : undefined,
     }
       onConfirmPayment([payment])
+      setSelectedMethod(null)
+      setSelectedMethodIsCash(false)
     }
   
 
@@ -55,6 +57,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleClose = () => {
     setSelectedMethod(null)
+    setSelectedMethodIsCash(false)
     onClose()
   }
 
@@ -73,8 +76,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </Button>
         )}
 
-        <DialogHeader>
-          <DialogTitle>
+        <DialogHeader className="text-center">
+          <DialogTitle className="text-center">
             {selectedMethod ? "Confirmar Pago" : "Seleccionar Método de Pago"}
           </DialogTitle>
         </DialogHeader>
