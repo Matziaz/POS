@@ -14,7 +14,6 @@ import {
   ProductGrid,
   SearchBar,
   TicketSummary,
-  type PaymentMethod,
 } from "@interface/components/sales/terminal"
 
 function normalizeText(value: string): string {
@@ -150,7 +149,7 @@ export const SalesTerminalPage: React.FC = () => {
           qty: line.qty,
         })),
         payments,
-        { cashRegisterId: cashRegister.id }
+        { cashRegisterId: cashRegister?.id }
       )
 
       setShowCheckoutModal(false)
