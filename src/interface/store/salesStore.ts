@@ -42,11 +42,16 @@ export interface RegisterSaleOptions {
 
 interface SaleState {
   sales: SaleView[]
+  salesHistory: SaleView[]
+  historyTotal: number
+  historyPage: number
+  historyPageSize: number
   isLoading: boolean
   error: string | null
   selectedSale: SaleView | null
 
   fetchSales: () => Promise<void>
+  fetchSalesHistory: (page?: number, pageSize?: number) => Promise<void>
   registerSale: (
     lines: RegisterSaleLineInput[],
     payments: RegisterSalePaymentInput[],
@@ -89,6 +94,10 @@ async function enrichSaleItems(
 
 export const useSaleStore = create<SaleState>((set, get) => ({
   sales: [],
+  salesHistory: [],
+  historyTotal: 0,
+  historyPage: 1,
+  historyPageSize: 10,
   isLoading: false,
   error: null,
   selectedSale: null,
@@ -97,9 +106,9 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const repo = getSaleRepository()
-      const saleList = await repo.list()
+      const allSales = await repo.list()
       const enriched = await Promise.all(
-        saleList.map((s) => enrichSaleItems(s.toJSON()))
+        allSales.map((s) => enrichSaleItems(s.toJSON()))
       )
       // Ordenar por fecha descendente (más reciente primero)
       enriched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -107,6 +116,34 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al cargar ventas",
+        isLoading: false,
+      })
+    }
+  },
+
+  fetchSalesHistory: async (page?: number, pageSize?: number) => {
+    set({ isLoading: true, error: null })
+    try {
+      const current = get()
+      const requestedPage = page ?? current.historyPage
+      const requestedPageSize = pageSize ?? current.historyPageSize
+      const safePage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1
+      const safePageSize = Number.isFinite(requestedPageSize) && requestedPageSize > 0 ? Math.floor(requestedPageSize) : 10
+
+      const repo = getSaleRepository()
+      const result = await repo.listPaginated(safePage, safePageSize)
+      const enriched = await Promise.all(result.sales.map((s) => enrichSaleItems(s.toJSON())))
+
+      set({
+        salesHistory: enriched,
+        historyTotal: result.total,
+        historyPage: safePage,
+        historyPageSize: safePageSize,
+        isLoading: false,
+      })
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : "Error al cargar historial de ventas",
         isLoading: false,
       })
     }
@@ -126,6 +163,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         cashRegisterId: options?.cashRegisterId,
       })
       await get().fetchSales()
+      await get().fetchSalesHistory(get().historyPage, get().historyPageSize)
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al registrar venta",

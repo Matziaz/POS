@@ -7,4 +7,5 @@ export interface SaleRepository {
     findByDateRange(from: Date, to: Date): Promise<Sale[]>;
     sumTotalByDateRange(from: Date, to: Date): Promise<number>;
     countByDateRange(from: Date, to: Date): Promise<number>;
+    listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }>;
 }

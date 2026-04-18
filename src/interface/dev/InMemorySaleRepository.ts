@@ -84,4 +84,18 @@ export class InMemorySaleRepository implements SaleRepository {
     const sales = await this.findByDateRange(from, to)
     return sales.length
   }
+
+  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+    const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10
+    const ordered = Array.from(this.sales.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    const start = (safePage - 1) * safePageSize
+    const end = start + safePageSize
+    return {
+      sales: ordered.slice(start, end),
+      total: ordered.length,
+    }
+  }
 }

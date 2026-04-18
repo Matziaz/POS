@@ -16,9 +16,14 @@ import type {
 
 export interface UseSalesReturn {
   sales: SaleView[]
+  salesHistory: SaleView[]
+  historyTotal: number
+  historyPage: number
+  historyPageSize: number
   isLoading: boolean
   error: string | null
   selectedSale: SaleView | null
+  fetchSalesHistory: (page?: number, pageSize?: number) => Promise<void>
   registerSale: (
     lines: RegisterSaleLineInput[],
     payments: RegisterSalePaymentInput[],
@@ -29,19 +34,27 @@ export interface UseSalesReturn {
   refetch: () => Promise<void>
 }
 
-export function useSales(): UseSalesReturn {
+export function useSales(options?: { autoFetch?: boolean }): UseSalesReturn {
   const store = useSaleStore()
+  const autoFetch = options?.autoFetch ?? true
 
   useEffect(() => {
-    store.fetchSales()
+    if (autoFetch) {
+      store.fetchSales()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [autoFetch])
 
   return {
     sales: store.sales,
+    salesHistory: store.salesHistory,
+    historyTotal: store.historyTotal,
+    historyPage: store.historyPage,
+    historyPageSize: store.historyPageSize,
     isLoading: store.isLoading,
     error: store.error,
     selectedSale: store.selectedSale,
+    fetchSalesHistory: store.fetchSalesHistory,
     registerSale: store.registerSale,
     selectSale: store.setSelectedSale,
     clearError: store.clearError,

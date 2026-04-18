@@ -157,4 +157,32 @@ export class PrismaSaleRepository implements SaleRepository {
     const sales = await this.findByDateRange(from, to);
     return sales.length;
   }
+
+  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
+    const skip = (page - 1) * pageSize;
+    const sales = await this.db.sale.findMany({
+      skip,
+      take: pageSize,
+      include: { sale_item: true },
+      orderBy: { created_at: "desc" as any },
+    });
+    const total = await this.db.sale.count();
+    return {
+      sales: sales.map((row) =>
+        Sale.create({
+          id: row.id,
+          userId: row.user_id,
+          cashRegisterId: (row as any).cash_register_id,
+          createdAt: toISOOrNow(row.created_at),
+          items: row.sale_item.map((si) => ({
+            id: si.id,
+            productId: si.product_id,
+            quantity: si.quantity,
+            price: si.price,
+          })),
+        })
+      ),
+      total,
+    };
+  }
 }

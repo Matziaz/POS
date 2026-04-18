@@ -255,6 +255,8 @@ const electronAPI = {
     ipcRenderer.invoke("sale:findById", id),
   saleSave: (data: SaleJSON): Promise<void> =>
     ipcRenderer.invoke("sale:save", data),
+  saleListPaginated: (page: number, pageSize: number): Promise<{ sales: SaleJSON[]; total: number }> =>
+    ipcRenderer.invoke("sale:listPaginated", page, pageSize),
 
   // Inventory Movements
   inventoryMovementSave: (data: InventoryMovementJSON): Promise<void> =>

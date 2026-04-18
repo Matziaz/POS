@@ -78,4 +78,24 @@ export class ElectronSaleRepository implements SaleRepository {
   async countByDateRange(from: Date, to: Date): Promise<number> {
     return getAPI().saleCountByDateRange(from.toISOString(), to.toISOString())
   }
+
+  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
+    const result = await getAPI().saleListPaginated(page, pageSize)
+    return {
+      sales: result.sales.map((json: any) =>
+        Sale.create({
+          id: json.id,
+          userId: json.userId,
+          createdAt: json.createdAt,
+          items: json.items.map((item: any) => ({
+            id: item.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        })
+      ),
+      total: result.total,
+    }
+  }
 }

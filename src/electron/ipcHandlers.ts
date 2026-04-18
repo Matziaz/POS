@@ -323,6 +323,16 @@ function registerSaleHandlers() {
     return sales.map((sale) => sale.toJSON());
   });
 
+  ipcMain.handle("sale:listPaginated", async (_event, page: number, pageSize: number) => {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10;
+    const result = await saleRepository.listPaginated(safePage, safePageSize);
+    return {
+      sales: result.sales.map((sale) => sale.toJSON()),
+      total: result.total,
+    };
+  });
+
   ipcMain.handle("sale:listByDateRange", async (_event, fromISO: string, toISO: string) => {
     const sales = await saleRepository.findByDateRange(new Date(fromISO), new Date(toISO));
     return sales.map((sale) => sale.toJSON());
