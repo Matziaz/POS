@@ -113,6 +113,11 @@ interface SaleJSON {
   items: SaleItemJSON[];
 }
 
+interface SaleListFiltersJSON {
+  fromISO?: string;
+  toISO?: string;
+}
+
 interface InventoryMovementJSON {
   id: string;
   productId: string;
@@ -255,8 +260,8 @@ const electronAPI = {
     ipcRenderer.invoke("sale:findById", id),
   saleSave: (data: SaleJSON): Promise<void> =>
     ipcRenderer.invoke("sale:save", data),
-  saleListPaginated: (page: number, pageSize: number): Promise<{ sales: SaleJSON[]; total: number }> =>
-    ipcRenderer.invoke("sale:listPaginated", page, pageSize),
+  saleListPaginated: (page: number, pageSize: number, filters?: SaleListFiltersJSON): Promise<{ sales: SaleJSON[]; total: number }> =>
+    ipcRenderer.invoke("sale:listPaginated", page, pageSize, filters),
 
   // Inventory Movements
   inventoryMovementSave: (data: InventoryMovementJSON): Promise<void> =>

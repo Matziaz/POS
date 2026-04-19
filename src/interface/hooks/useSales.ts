@@ -12,6 +12,7 @@ import type {
   RegisterSaleLineInput,
   RegisterSalePaymentInput,
   RegisterSaleOptions,
+  SaleHistoryFilters,
 } from "@interface/store/salesStore"
 
 export interface UseSalesReturn {
@@ -20,10 +21,11 @@ export interface UseSalesReturn {
   historyTotal: number
   historyPage: number
   historyPageSize: number
+  historyFilters: SaleHistoryFilters
   isLoading: boolean
   error: string | null
   selectedSale: SaleView | null
-  fetchSalesHistory: (page?: number, pageSize?: number) => Promise<void>
+  fetchSalesHistory: (page?: number, pageSize?: number, filters?: SaleHistoryFilters) => Promise<void>
   registerSale: (
     lines: RegisterSaleLineInput[],
     payments: RegisterSalePaymentInput[],
@@ -51,6 +53,7 @@ export function useSales(options?: { autoFetch?: boolean }): UseSalesReturn {
     historyTotal: store.historyTotal,
     historyPage: store.historyPage,
     historyPageSize: store.historyPageSize,
+    historyFilters: store.historyFilters,
     isLoading: store.isLoading,
     error: store.error,
     selectedSale: store.selectedSale,

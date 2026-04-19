@@ -31,6 +31,16 @@ Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyec
    - Restauracion con stock manual desde una pagina dedicada
    - Ajustes necesarios en Prisma, IPC, repositorios y store/hook UI
 
+6. **[README_PAGINACION_VENTAS.md](./README_PAGINACION_VENTAS.md)** — Paginacion del historial de ventas
+   - Carga paginada de ventas desde repositorio e IPC
+   - Estado de pagina y total en store/hook de ventas
+   - Navegacion Anterior/Siguiente e indicadores en UI
+
+7. **[README_FILTROS_VENTAS.md](./README_FILTROS_VENTAS.md)** — Filtros por fecha y hora en historial de ventas
+   - Filtros desde/hasta conectados a paginacion sin romper el total
+   - Persistencia de filtros aplicados en store y navegacion por pagina
+   - Validaciones de rango, normalizacion de fechas y proteccion contra respuestas viejas
+
 ## Por Donde Empezar
 
 **Paso 1 — Solo si nunca trabajaste con desarrollo web:**

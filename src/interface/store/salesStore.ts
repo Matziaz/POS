@@ -7,6 +7,7 @@
 
 import { create } from "zustand"
 import { getSaleService, getSaleRepository, getProductRepository } from "@interface/dev/serviceFactory"
+import type { SaleListFilters } from "@core/repositories"
 
 export interface SaleItemView {
   id: string
@@ -46,20 +47,51 @@ interface SaleState {
   historyTotal: number
   historyPage: number
   historyPageSize: number
+  historyFilters: SaleHistoryFilters
   isLoading: boolean
   error: string | null
   selectedSale: SaleView | null
 
   fetchSales: () => Promise<void>
-  fetchSalesHistory: (page?: number, pageSize?: number) => Promise<void>
+  fetchSalesHistory: (page?: number, pageSize?: number, filters?: SaleHistoryFilters) => Promise<void>
   registerSale: (
     lines: RegisterSaleLineInput[],
     payments: RegisterSalePaymentInput[],
     options?: RegisterSaleOptions
   ) => Promise<void>
+  setHistoryFilters: (filters: SaleHistoryFilters) => void
   setSelectedSale: (sale: SaleView | null) => void
   clearError: () => void
 }
+
+
+/**
+ * Valida y normaliza los filtros de fecha para el historial de ventas.
+ * Asegura que las fechas sean ISO válidas y que el rango sea lógico.
+ */
+export type SaleHistoryFilters = SaleListFilters
+
+let latestHistoryRequestId = 0
+
+function normalizeHistoryFilters(filters?: SaleHistoryFilters): SaleHistoryFilters {
+  const fromISO = typeof filters?.fromISO === "string" && filters.fromISO.trim() ? filters.fromISO : undefined
+  const toISO = typeof filters?.toISO === "string" && filters.toISO.trim() ? filters.toISO : undefined
+
+  if (fromISO && Number.isNaN(new Date(fromISO).getTime())) {
+    throw new Error("Filtro de fecha inicial invalido")
+  }
+
+  if (toISO && Number.isNaN(new Date(toISO).getTime())) {
+    throw new Error("Filtro de fecha final invalido")
+  }
+
+  if (fromISO && toISO && new Date(fromISO).getTime() >= new Date(toISO).getTime()) {
+    throw new Error("El rango de fechas es invalido: la fecha inicial debe ser menor a la final")
+  }
+
+  return { fromISO, toISO }
+}
+
 
 /**
  * Enriquece una venta con nombres de producto resolviendo IDs.
@@ -98,6 +130,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   historyTotal: 0,
   historyPage: 1,
   historyPageSize: 10,
+  historyFilters: {},
   isLoading: false,
   error: null,
   selectedSale: null,
@@ -121,27 +154,33 @@ export const useSaleStore = create<SaleState>((set, get) => ({
     }
   },
 
-  fetchSalesHistory: async (page?: number, pageSize?: number) => {
+  fetchSalesHistory: async (page?: number, pageSize?: number, filters?: SaleHistoryFilters) => {
+    const requestId = ++latestHistoryRequestId
     set({ isLoading: true, error: null })
     try {
       const current = get()
       const requestedPage = page ?? current.historyPage
       const requestedPageSize = pageSize ?? current.historyPageSize
+      const normalizedFilters = normalizeHistoryFilters(filters ?? current.historyFilters)
       const safePage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1
       const safePageSize = Number.isFinite(requestedPageSize) && requestedPageSize > 0 ? Math.floor(requestedPageSize) : 10
 
       const repo = getSaleRepository()
-      const result = await repo.listPaginated(safePage, safePageSize)
+      const result = await repo.listPaginated(safePage, safePageSize, normalizedFilters)
       const enriched = await Promise.all(result.sales.map((s) => enrichSaleItems(s.toJSON())))
+
+      if (requestId !== latestHistoryRequestId) return
 
       set({
         salesHistory: enriched,
         historyTotal: result.total,
         historyPage: safePage,
         historyPageSize: safePageSize,
+        historyFilters: normalizedFilters,
         isLoading: false,
       })
     } catch (err) {
+      if (requestId !== latestHistoryRequestId) return
       set({
         error: err instanceof Error ? err.message : "Error al cargar historial de ventas",
         isLoading: false,
@@ -163,7 +202,7 @@ export const useSaleStore = create<SaleState>((set, get) => ({
         cashRegisterId: options?.cashRegisterId,
       })
       await get().fetchSales()
-      await get().fetchSalesHistory(get().historyPage, get().historyPageSize)
+      await get().fetchSalesHistory(get().historyPage, get().historyPageSize, get().historyFilters)
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al registrar venta",
@@ -175,6 +214,10 @@ export const useSaleStore = create<SaleState>((set, get) => ({
 
   setSelectedSale: (sale: SaleView | null) => {
     set({ selectedSale: sale })
+  },
+
+  setHistoryFilters: (filters: SaleHistoryFilters) => {
+    set({ historyFilters: normalizeHistoryFilters(filters) })
   },
 
   clearError: () => {

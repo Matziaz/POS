@@ -115,6 +115,11 @@ interface SaleJSON {
   items: SaleItemJSON[];
 }
 
+interface SaleListFiltersJSON {
+  fromISO?: string;
+  toISO?: string;
+}
+
 interface InventoryMovementJSON {
   id: string;
   productId: string;
@@ -318,15 +323,35 @@ function registerProductHandlers() {
 // ─── Sale handlers ────────────────────────────────────────────────────────────
 
 function registerSaleHandlers() {
+  const normalizeFilters = (filters?: SaleListFiltersJSON): SaleListFiltersJSON | undefined => {
+    const fromISO = typeof filters?.fromISO === "string" && filters.fromISO.trim() ? filters.fromISO : undefined;
+    const toISO = typeof filters?.toISO === "string" && filters.toISO.trim() ? filters.toISO : undefined;
+
+    const fromMs = fromISO ? new Date(fromISO).getTime() : null;
+    const toMs = toISO ? new Date(toISO).getTime() : null;
+
+    if ((fromISO && Number.isNaN(fromMs ?? NaN)) || (toISO && Number.isNaN(toMs ?? NaN))) {
+      throw new Error("Invalid date filter");
+    }
+
+    if (fromMs !== null && toMs !== null && fromMs >= toMs) {
+      throw new Error("Invalid date range: fromISO must be before toISO");
+    }
+
+    if (!fromISO && !toISO) return undefined;
+    return { fromISO, toISO };
+  };
+
   ipcMain.handle("sale:list", async () => {
     const sales = await saleRepository.list();
     return sales.map((sale) => sale.toJSON());
   });
 
-  ipcMain.handle("sale:listPaginated", async (_event, page: number, pageSize: number) => {
+  ipcMain.handle("sale:listPaginated", async (_event, page: number, pageSize: number, filters?: SaleListFiltersJSON) => {
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
     const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10;
-    const result = await saleRepository.listPaginated(safePage, safePageSize);
+    const normalizedFilters = normalizeFilters(filters);
+    const result = await saleRepository.listPaginated(safePage, safePageSize, normalizedFilters);
     return {
       sales: result.sales.map((sale) => sale.toJSON()),
       total: result.total,

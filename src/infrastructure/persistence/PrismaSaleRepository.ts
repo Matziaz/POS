@@ -5,7 +5,7 @@
  * Corre en el proceso main de Electron (Node.js).
  */
 
-import type { SaleRepository } from "../../core/repositories/SaleRepository";
+import type { SaleListFilters, SaleRepository } from "../../core/repositories/SaleRepository";
 import { Sale } from "../../core/entities/Sale";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../database/prismaClient";
@@ -17,6 +17,18 @@ function toISOOrNow(value: unknown): string {
 }
 
 export class PrismaSaleRepository implements SaleRepository {
+    private buildDateFilters(filters?: SaleListFilters): { created_at?: { gte?: string; lt?: string } } {
+      const fromISO = typeof filters?.fromISO === "string" && filters.fromISO.trim() ? filters.fromISO : undefined;
+      const toISO = typeof filters?.toISO === "string" && filters.toISO.trim() ? filters.toISO : undefined;
+
+      const createdAt: { gte?: string; lt?: string } = {};
+      if (fromISO) createdAt.gte = fromISO;
+      if (toISO) createdAt.lt = toISO;
+
+      if (!createdAt.gte && !createdAt.lt) return {};
+      return { created_at: createdAt };
+    }
+
   constructor(private readonly db: PrismaClient = prisma) {}
 
   private async resolveCashRegisterId(preferredId: string | null): Promise<string> {
@@ -158,15 +170,21 @@ export class PrismaSaleRepository implements SaleRepository {
     return sales.length;
   }
 
-  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    filters?: SaleListFilters
+  ): Promise<{ sales: Sale[]; total: number }> {
     const skip = (page - 1) * pageSize;
+    const where = this.buildDateFilters(filters);
     const sales = await this.db.sale.findMany({
       skip,
       take: pageSize,
+      where,
       include: { sale_item: true },
       orderBy: { created_at: "desc" as any },
     });
-    const total = await this.db.sale.count();
+    const total = await this.db.sale.count({ where });
     return {
       sales: sales.map((row) =>
         Sale.create({

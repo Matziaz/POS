@@ -6,9 +6,16 @@
  */
 
 import { Sale } from "@core/entities"
-import type { SaleRepository } from "@core/repositories"
+import type { SaleListFilters, SaleRepository } from "@core/repositories"
 import { newId } from "@core/services/id"
 import { DEFAULT_USER_ID } from "@core/constants"
+
+function toMillis(value?: string): number | null {
+  if (!value?.trim()) return null
+  const parsed = new Date(value)
+  const time = parsed.getTime()
+  return Number.isNaN(time) ? null : time
+}
 
 export class InMemorySaleRepository implements SaleRepository {
   private sales = new Map<string, Sale>()
@@ -85,10 +92,22 @@ export class InMemorySaleRepository implements SaleRepository {
     return sales.length
   }
 
-  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    filters?: SaleListFilters
+  ): Promise<{ sales: Sale[]; total: number }> {
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
     const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10
-    const ordered = Array.from(this.sales.values()).sort(
+    const fromMs = toMillis(filters?.fromISO)
+    const toMs = toMillis(filters?.toISO)
+
+    const ordered = Array.from(this.sales.values()).filter((sale) => {
+      const createdAtMs = new Date(sale.createdAt).getTime()
+      if (fromMs !== null && createdAtMs < fromMs) return false
+      if (toMs !== null && createdAtMs >= toMs) return false
+      return true
+    }).sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     const start = (safePage - 1) * safePageSize

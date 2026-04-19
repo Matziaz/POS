@@ -8,7 +8,7 @@
  */
 
 import { Sale } from "@core/entities"
-import type { SaleRepository } from "@core/repositories"
+import type { SaleListFilters, SaleRepository } from "@core/repositories"
 
 function getAPI(): NonNullable<typeof window.electronAPI> {
   const api = window.electronAPI
@@ -79,8 +79,12 @@ export class ElectronSaleRepository implements SaleRepository {
     return getAPI().saleCountByDateRange(from.toISOString(), to.toISOString())
   }
 
-  async listPaginated(page: number, pageSize: number): Promise<{ sales: Sale[]; total: number }> {
-    const result = await getAPI().saleListPaginated(page, pageSize)
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    filters?: SaleListFilters
+  ): Promise<{ sales: Sale[]; total: number }> {
+    const result = await getAPI().saleListPaginated(page, pageSize, filters)
     return {
       sales: result.sales.map((json: any) =>
         Sale.create({

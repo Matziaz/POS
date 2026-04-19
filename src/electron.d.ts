@@ -107,6 +107,11 @@ interface SaleJSON {
   items: SaleItemJSON[]
 }
 
+interface SaleListFiltersJSON {
+  fromISO?: string
+  toISO?: string
+}
+
 interface InventoryMovementJSON {
   id: string
   productId: string
@@ -216,7 +221,7 @@ interface ElectronAPI {
   saleCountByDateRange(fromISO: string, toISO: string): Promise<number>
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
-  saleListPaginated(page: number, pageSize: number): Promise<{ sales: SaleJSON[]; total: number }>
+  saleListPaginated(page: number, pageSize: number, filters?: SaleListFiltersJSON): Promise<{ sales: SaleJSON[]; total: number }>
   
   // Payment Methods
   paymentMethodListActive(): Promise<any[]>
