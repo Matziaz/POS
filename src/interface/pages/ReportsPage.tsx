@@ -1,5 +1,5 @@
 import React, { useMemo } from "react"
-import { AlertTriangle, BarChart3, Receipt, Wallet } from "lucide-react"
+import { AlertTriangle, BarChart3, Package, Receipt, Wallet } from "lucide-react"
 import { useProducts } from "@interface/hooks/useProducts"
 import { useSales } from "@interface/hooks/useSales"
 import { Badge } from "@interface/components/ui/badge"
@@ -131,7 +131,10 @@ export const ReportsPage: React.FC = () => {
   const ticketsCount = periodSales.length
   const totalRevenue = periodSales.reduce((sum, sale) => sum + sale.total, 0)
   const averageTicket = ticketsCount > 0 ? totalRevenue / ticketsCount : 0
-
+  const totalUnitsSold = periodSales.reduce(
+    (sum, sale) => sum + sale.items.reduce((inner, item) => inner + item.quantity, 0),
+    0
+  )
   const topProducts = useMemo<TopProductRow[]>(() => {
     const byProduct = new Map<string, TopProductRow>()
 
@@ -193,6 +196,40 @@ export const ReportsPage: React.FC = () => {
                 {period.label}
               </Button>
             ))}
+            <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const fecha = new Date().toLocaleDateString("es-MX")
+              const rows = [
+                [`RESUMEN - ${periodLabel} - ${fecha}`],
+                ["Ingresos", formatMoney(totalRevenue)],
+                ["Transacciones", String(ticketsCount)],
+                ["Ticket promedio", formatMoney(averageTicket)],
+                ["Unidades vendidas", String(totalUnitsSold)],
+                [],
+                ["TOP PRODUCTOS"],
+                ["Producto", "Cantidad vendida", "Ingreso"],
+                ...topProducts.map((p) => [p.productName, String(p.quantity), formatMoney(p.revenue)]),
+                [],
+                ["BAJO STOCK"],
+                ["SKU", "Producto", "Stock"],
+                ...lowStockProducts.map((p) => [p.sku, p.name, String(p.stock)]),
+              ]
+            const csv = rows.map((r) => r.join(",")).join("\n")
+            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.href = url
+            link.download = `reporte-${periodLabel}-${new Date().toISOString().slice(0, 10)}.csv`
+            link.click()
+            URL.revokeObjectURL(url)
+                }}
+            >
+              Exportar Excel
+            </Button>
+
           </div>
         </div>
       </header>
@@ -208,33 +245,25 @@ export const ReportsPage: React.FC = () => {
         conclusiones sesgadas.
       </section>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          label="Ingresos del periodo"
-          value={formatMoney(totalRevenue)}
-          icon={<Wallet className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Transacciones"
-          value={ticketsCount}
-          icon={<Receipt className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Ticket promedio"
-          value={formatMoney(averageTicket)}
-          icon={<BarChart3 className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Top productos"
-          value={topProducts.length}
-          icon={<BarChart3 className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Productos bajo stock"
-          value={lowStockProducts.length}
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
-      </section>
+      <div className="mb-6 space-y-4">
+  <div>
+    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ventas</p>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MetricCard label="Ingresos del periodo" value={formatMoney(totalRevenue)} icon={<Wallet className="h-4 w-4" />} />
+      <MetricCard label="Transacciones" value={ticketsCount} icon={<Receipt className="h-4 w-4" />} />
+      <MetricCard label="Ticket promedio" value={formatMoney(averageTicket)} icon={<BarChart3 className="h-4 w-4" />} />
+      <MetricCard label="Unidades vendidas" value={totalUnitsSold} icon={<Receipt className="h-4 w-4" />} />
+    </div>
+  </div>
+  <div>
+    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Inventario</p>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <MetricCard label="Productos activos" value={products.length} icon={<Package className="h-4 w-4" />} />
+      <MetricCard label="Top productos" value={topProducts.length} icon={<BarChart3 className="h-4 w-4" />} />
+      <MetricCard label="Productos bajo stock" value={lowStockProducts.length} icon={<AlertTriangle className="h-4 w-4" />} />
+    </div>
+  </div>
+</div>
 
       {isLoading && (
         <div className="mb-6 space-y-3">
