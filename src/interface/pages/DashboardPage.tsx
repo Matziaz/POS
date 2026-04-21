@@ -1,9 +1,9 @@
 import React, { useMemo } from "react"
-import { AlertTriangle, BarChart3, Package, Receipt, Wallet } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { useProducts } from "@interface/hooks/useProducts"
 import { useSales } from "@interface/hooks/useSales"
 import { Badge } from "@interface/components/ui/badge"
-import { Button } from "@interface/components/ui/button"
+
 import {
   Table,
   TableBody,
@@ -111,30 +111,10 @@ function formatDateTime(dateStr: string): string {
   }
 }
 
-function MetricCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string
-  value: string | number
-  icon: React.ReactNode
-}) {
-  return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1 text-2xl font-bold">{value}</p>
-        </div>
-        <div className="rounded-md bg-muted p-2 text-muted-foreground">{icon}</div>
-      </div>
-    </div>
-  )
-}
 
 export const DashboardPage: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = React.useState<DashboardPeriod>("today")
+  const navigate = useNavigate()
+  const selectedPeriod: DashboardPeriod = "last7"
 
   const {
     sales,
@@ -160,13 +140,6 @@ export const DashboardPage: React.FC = () => {
     })
   }, [sales, periodRange])
 
-  const ticketsCount = periodSales.length
-  const totalRevenue = periodSales.reduce((sum, sale) => sum + sale.total, 0)
-  const averageTicket = ticketsCount > 0 ? totalRevenue / ticketsCount : 0
-  const totalUnitsSold = periodSales.reduce(
-    (sum, sale) => sum + sale.items.reduce((inner, item) => inner + item.quantity, 0),
-    0
-  )
 
   const topProducts = useMemo<TopProductRow[]>(() => {
     const byProduct = new Map<string, TopProductRow>()
@@ -258,22 +231,8 @@ export const DashboardPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
             <p className="mt-1 text-muted-foreground">
-              Resumen operativo para ventas e inventario.
+              Resumen operativo para ventas e inventario de los últimos 7 días.
             </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {DASHBOARD_PERIODS.map((period) => (
-              <Button
-                key={period.id}
-                type="button"
-                size="sm"
-                variant={selectedPeriod === period.id ? "default" : "outline"}
-                onClick={() => setSelectedPeriod(period.id)}
-              >
-                {period.label}
-              </Button>
-            ))}
           </div>
         </div>
       </header>
@@ -284,38 +243,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          label="Ventas del periodo"
-          value={formatMoney(totalRevenue)}
-          icon={<Wallet className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Tickets del periodo"
-          value={ticketsCount}
-          icon={<Receipt className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Ticket promedio"
-          value={formatMoney(averageTicket)}
-          icon={<BarChart3 className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Unidades vendidas"
-          value={totalUnitsSold}
-          icon={<Receipt className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Productos bajos"
-          value={lowStockProducts.length}
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
-        <MetricCard
-          label="Productos activos"
-          value={products.length}
-          icon={<Package className="h-4 w-4" />}
-        />
-      </section>
 
       {isLoading && (
         <div className="mb-6 space-y-3">
@@ -328,7 +255,10 @@ export const DashboardPage: React.FC = () => {
       {!isLoading && (
         <div className="space-y-6">
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <div className="rounded-lg border bg-card p-4">
+            <div
+            className="rounded-lg border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/reportes")}
+            >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Tendencia de ventas por dia</h2>
                 <Badge variant="secondary">{periodLabel}</Badge>
@@ -357,7 +287,10 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-lg border bg-card p-4">
+            <div
+            className="rounded-lg border bg-card p-4 cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => navigate("/ventas")}
+            >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Ventas por hora</h2>
                 <Badge variant="secondary">{periodLabel}</Badge>
@@ -407,7 +340,11 @@ export const DashboardPage: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {topProducts.map((item) => (
-                      <TableRow key={item.productId}>
+                      <TableRow 
+                      key={item.productId}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate("/ventas/terminal")}
+                      >
                         <TableCell className="font-medium">{item.productName}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">{formatMoney(item.revenue)}</TableCell>
@@ -440,7 +377,11 @@ export const DashboardPage: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {lowStockProducts.map((product) => (
-                      <TableRow key={product.id}>
+                      <TableRow 
+                      key={product.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate("/inventario")}
+                      >
                         <TableCell className="font-mono text-xs">{product.sku}</TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell className="text-right">
