@@ -14,7 +14,7 @@ import path from "node:path";
 import { Product } from "../core/entities/Product";
 import { Sale } from "../core/entities/Sale";
 import { InventoryMovement } from "../core/entities/InventoryMovement";
-import { Provider, User } from "../core/entities";
+import { Provider, User, PaymentMethod } from "../core/entities";
 import { CashRegister } from "../core/entities/CashRegister";
 import { AdminSetupService, CashClosureService, ConfigurationService } from "../core/services";
 import { newId } from "../core/services/id";
@@ -232,6 +232,26 @@ interface CashClosureCloseJSON {
   userId?: string;
   notes?: string;
   isFinal?: boolean;
+}
+
+interface PaymentMethodJSON {
+  id: string;
+  method: string;
+  isCash: number;
+  isActive: number;
+  displayOrder: number | null;
+}
+
+interface PaymentMethodCreateJSON {
+  method: string;
+  isCash: number;
+  displayOrder?: number | null;
+}
+
+interface PaymentMethodUpdateJSON {
+  id: string;
+  method: string;
+  displayOrder?: number | null;
 }
 
 // ─── Product handlers ─────────────────────────────────────────────────────────
@@ -573,8 +593,52 @@ function registerCashRegisterHandlers() {
 }
 function registerPaymentMethodHandlers() {
   ipcMain.handle("paymentMethod:listActive", async () => {
-     const methods = await paymentMethodRepository.listActive()
-     return methods.map((m) => m.toJSON())
+    const methods = await paymentMethodRepository.listActive()
+    return methods.map((m) => m.toJSON())
+  })
+
+  ipcMain.handle("paymentMethod:list", async (): Promise<PaymentMethodJSON[]> => {
+    const methods = await paymentMethodRepository.list()
+    return methods.map((m) => m.toJSON())
+  })
+
+  ipcMain.handle("paymentMethod:create", async (_event, data: PaymentMethodCreateJSON): Promise<PaymentMethodJSON> => {
+    const method = PaymentMethod.create({
+      id: newId(),
+      method: data.method,
+      isCash: data.isCash,
+      isActive: 1,
+      displayOrder: typeof data.displayOrder === "number" ? data.displayOrder : null,
+    })
+    await paymentMethodRepository.save(method)
+    return method.toJSON()
+  })
+
+  ipcMain.handle("paymentMethod:update", async (_event, data: PaymentMethodUpdateJSON): Promise<void> => {
+    const existing = await paymentMethodRepository.findById(data.id)
+    if (!existing) throw new Error("No se encontro el metodo de pago a actualizar")
+    const updated = PaymentMethod.create({
+      id: existing.id,
+      method: data.method,
+      isCash: existing.isCash,
+      isActive: existing.isActive,
+      displayOrder: typeof data.displayOrder === "number" ? data.displayOrder : null,
+    })
+    await paymentMethodRepository.save(updated)
+  })
+
+  ipcMain.handle("paymentMethod:toggleActive", async (_event, id: string): Promise<PaymentMethodJSON> => {
+    const existing = await paymentMethodRepository.findById(id)
+    if (!existing) throw new Error("No se encontro el metodo de pago")
+    const toggled = PaymentMethod.create({
+      id: existing.id,
+      method: existing.method,
+      isCash: existing.isCash,
+      isActive: existing.isActive === 1 ? 0 : 1,
+      displayOrder: existing.displayOrder,
+    })
+    await paymentMethodRepository.save(toggled)
+    return toggled.toJSON()
   })
 }
 

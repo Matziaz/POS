@@ -24,5 +24,17 @@ export const AdminSectionTabs: React.FC<AdminSectionTabsProps> = ({
     >
       Restaurar productos
     </Button>
+    <Button
+      variant={activeSection === "payment" ? "default" : "outline"}
+      onClick={() => onChange("payment")}
+    >
+      Métodos de pago
+    </Button>
+    <Button
+      variant={activeSection === "config" ? "default" : "outline"}
+      onClick={() => onChange("config")}
+    >
+      Aplicación
+    </Button>
   </div>
 )

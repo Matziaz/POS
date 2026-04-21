@@ -186,6 +186,26 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[];
 }
 
+interface PaymentMethodJSON {
+  id: string;
+  method: string;
+  isCash: number;
+  isActive: number;
+  displayOrder: number | null;
+}
+
+interface PaymentMethodCreateJSON {
+  method: string;
+  isCash: number;
+  displayOrder?: number | null;
+}
+
+interface PaymentMethodUpdateJSON {
+  id: string;
+  method: string;
+  displayOrder?: number | null;
+}
+
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
 
 const electronAPI = {
@@ -280,8 +300,16 @@ const electronAPI = {
     ipcRenderer.invoke("cashClosure:listByDateRange", fromISO, toISO),
 
   // Payment Methods
-  paymentMethodListActive: (): Promise<any[]> =>
+  paymentMethodListActive: (): Promise<PaymentMethodJSON[]> =>
     ipcRenderer.invoke("paymentMethod:listActive"),
+  paymentMethodList: (): Promise<PaymentMethodJSON[]> =>
+    ipcRenderer.invoke("paymentMethod:list"),
+  paymentMethodCreate: (data: PaymentMethodCreateJSON): Promise<PaymentMethodJSON> =>
+    ipcRenderer.invoke("paymentMethod:create", data),
+  paymentMethodUpdate: (data: PaymentMethodUpdateJSON): Promise<void> =>
+    ipcRenderer.invoke("paymentMethod:update", data),
+  paymentMethodToggleActive: (id: string): Promise<PaymentMethodJSON> =>
+    ipcRenderer.invoke("paymentMethod:toggleActive", id),
 
   // Sale Payments
   salePaymentSave: (data: SalePaymentJSON): Promise<void> =>

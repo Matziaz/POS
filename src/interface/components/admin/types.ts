@@ -1,4 +1,4 @@
-export type AdminSection = "setup" | "restore"
+export type AdminSection = "setup" | "restore" | "payment" | "config"
 
 export interface AdminProductType {
   id: string
@@ -15,4 +15,12 @@ export interface AdminUser {
 export interface AdminRole {
   id: string
   type: string
+}
+
+export interface AdminPaymentMethod {
+  id: string
+  method: string
+  isCash: number
+  isActive: number
+  displayOrder: number | null
 }
