@@ -1,4 +1,4 @@
-import type { ProductRepository } from "../../core/repositories/ProductRepository";
+import type { ProductListSortOptions, ProductRepository, SortDirection } from "../../core/repositories/ProductRepository";
 import { Product } from "../../core/entities";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../database/prismaClient";
@@ -7,6 +7,14 @@ function toISOOrNow(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) return new Date().toISOString();
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
+function normalizePage(value: number, fallback: number): number {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+function normalizeDirection(value?: SortDirection): SortDirection {
+  return value === "asc" ? "asc" : "desc";
 }
 
 function toDomain(row: any): Product {
@@ -83,9 +91,54 @@ export class PrismaProductRepository implements ProductRepository {
 
   async list(): Promise<Product[]> {
     const rows = await this.db.product.findMany({
+      where: { deleted_at: null },
       orderBy: { created_at: "desc" as any },
     });
     return rows.map(toDomain);
+  }
+
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    options?: ProductListSortOptions
+  ): Promise<{ products: Product[]; total: number }> {
+    const safePage = normalizePage(page, 1);
+    const safePageSize = normalizePage(pageSize, 10);
+    const sortBy = options?.sortBy ?? "createdAt";
+    const sortDirection = normalizeDirection(options?.sortDirection);
+
+    const orderBy = (() => {
+      switch (sortBy) {
+        case "name":
+          return { name: sortDirection };
+        case "sku":
+          return { sku: sortDirection };
+        case "price":
+          return { price: sortDirection };
+        case "stock":
+          return { stock: sortDirection };
+        case "typeId":
+          return { type_id: sortDirection };
+        case "createdAt":
+        default:
+          return { created_at: sortDirection as any };
+      }
+    })();
+
+    const [total, rows] = await Promise.all([
+      this.db.product.count({ where: { deleted_at: null } }),
+      this.db.product.findMany({
+        where: { deleted_at: null },
+        orderBy,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
+      }),
+    ]);
+
+    return {
+      products: rows.map(toDomain),
+      total,
+    };
   }
 
   async listDeleted(): Promise<Product[]> {

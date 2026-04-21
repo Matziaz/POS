@@ -22,6 +22,11 @@ interface ProductJSON {
   deletedAt: string | null;
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId";
+  sortDirection?: "asc" | "desc";
+}
+
 interface ProductTypeJSON {
   id: string;
   name: string;
@@ -198,6 +203,12 @@ const electronAPI = {
   // Products
   productList: (): Promise<ProductJSON[]> =>
     ipcRenderer.invoke("product:list"),
+  productListPaginated: (
+    page: number,
+    pageSize: number,
+    options?: ProductListSortOptionsJSON
+  ): Promise<{ products: ProductJSON[]; total: number }> =>
+    ipcRenderer.invoke("product:listPaginated", page, pageSize, options),
   productFindById: (id: string): Promise<ProductJSON | null> =>
     ipcRenderer.invoke("product:findById", id),
   productFindBySku: (sku: string): Promise<ProductJSON | null> =>

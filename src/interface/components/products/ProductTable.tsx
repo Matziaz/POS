@@ -1,5 +1,5 @@
 import React from "react"
-import { Pencil, Trash2, Package } from "lucide-react"
+import { ArrowUpDown, ChevronUp, ChevronDown, Pencil, Trash2, Package } from "lucide-react"
 import type { ProductProps } from "@core/entities"
 import { DEFAULT_PRODUCT_IMAGE } from "@shared/constants/constants"
 import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
@@ -13,12 +13,16 @@ import {
 } from "@interface/components/ui/table"
 import { Button } from "@interface/components/ui/button"
 import { Badge } from "@interface/components/ui/badge"
+import type { ProductSortField, SortDirection } from "@core/repositories"
 
 interface ProductTableProps {
   products: ProductProps[]
   isLoading: boolean
   typeNameById?: Record<string, string>
   providerNameById?: Record<string, string>
+  sortBy?: ProductSortField
+  sortDirection?: SortDirection
+  onSortChange?: (field: ProductSortField) => void
   onEdit: (product: ProductProps) => void
   onDelete: (product: ProductProps) => void
   onCreate?: () => void
@@ -94,11 +98,50 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
   )
 }
 
+function SortableHeader({
+  label,
+  field,
+  sortBy,
+  sortDirection,
+  onSortChange,
+  align = "left",
+  className = "",
+}: {
+  label: string
+  field: ProductSortField
+  sortBy?: ProductSortField
+  sortDirection?: SortDirection
+  onSortChange?: (field: ProductSortField) => void
+  align?: "left" | "right" | "center"
+  className?: string
+}) {
+  const active = sortBy === field
+  const Icon = active ? (sortDirection === "asc" ? ChevronUp : ChevronDown) : ArrowUpDown
+
+  const alignmentClass = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start"
+
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        className={`flex w-full items-center gap-1.5 text-left transition hover:text-foreground ${alignmentClass}`}
+        onClick={() => onSortChange?.(field)}
+      >
+        <span>{label}</span>
+        <Icon className={`h-4 w-4 ${active ? "text-foreground" : "text-muted-foreground"}`} />
+      </button>
+    </TableHead>
+  )
+}
+
 export const ProductTable: React.FC<ProductTableProps> = ({
   products,
   isLoading,
   typeNameById = {},
   providerNameById = {},
+  sortBy,
+  sortDirection,
+  onSortChange,
   onEdit,
   onDelete,
   onCreate,
@@ -116,14 +159,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>SKU</TableHead>
+            <SortableHeader label="SKU" field="sku" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} />
             <TableHead>Imagen</TableHead>
-            <TableHead>Nombre</TableHead>
-            <TableHead className="hidden md:table-cell">Tipo</TableHead>
-            <TableHead className="text-right">Precio</TableHead>
-            <TableHead className="text-center">Stock</TableHead>
+            <SortableHeader label="Nombre" field="name" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} />
+            <SortableHeader label="Tipo" field="typeId" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} className="hidden md:table-cell" />
+            <SortableHeader label="Precio" field="price" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} align="right" className="text-right" />
+            <SortableHeader label="Stock" field="stock" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} align="center" className="text-center" />
             <TableHead className="hidden lg:table-cell">Proveedor</TableHead>
-            <TableHead className="hidden xl:table-cell">Fecha de creación</TableHead>
+            <SortableHeader label="Fecha de creación" field="createdAt" sortBy={sortBy} sortDirection={sortDirection} onSortChange={onSortChange} className="hidden xl:table-cell" />
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>

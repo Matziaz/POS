@@ -1,168 +1,82 @@
-# README - Reporte de paginacion en historial de ventas
+# README - Paginacion de Ventas (estado actual)
 
 ## Resumen
 
-En esta entrega se implemento paginacion para el historial de ventas en la pantalla de Ventas.
+La pantalla de Ventas usa paginacion real de extremo a extremo:
 
-Objetivo principal:
+- UI con indicadores de rango y pagina.
+- Store Zustand con estado paginado persistente.
+- Repositorio + IPC + persistencia con total sincronizado.
 
-- Evitar cargar todas las ventas en un solo fetch.
-- Mostrar navegacion por pagina (Anterior/Siguiente).
-- Mantener el total global de ventas para dar contexto al usuario.
-- Conservar un flujo consistente desde UI hasta persistencia.
+Este documento refleja el estado vigente al 2026-04-20.
 
-## Alcance funcional
+## Comportamiento en UI
 
-### 1) UI de paginacion en pantalla de ventas
-
-Archivo:
+Archivo principal:
 
 - src/interface/pages/SalesPage.tsx
 
-Comportamiento aplicado:
+Implementacion actual:
 
-- La pantalla carga historial paginado al montar (pagina 1, size actual del store).
-- Se muestra indicador de rango actual: "Mostrando X-Y de N ventas".
-- Se muestra indicador de pagina: "Pagina P de T".
-- Se agregan botones "Anterior" y "Siguiente".
-- Los botones se deshabilitan cuando:
-  - no hay pagina anterior,
-  - no hay pagina siguiente,
-  - o hay una carga en curso (`isLoading`).
+- Al montar la pagina se llama fetchSalesHistory(1, historyPageSize, historyFilters).
+- Se muestra "Mostrando X-Y de N ventas" cuando hay resultados.
+- Se muestra "Pagina P de T".
+- Navegacion con botones "Anterior" y "Siguiente".
+- Los botones se deshabilitan cuando no hay pagina previa/siguiente o cuando isLoading es true.
 
-Calculos en UI:
+Calculos actuales:
 
-- totalPages = ceil(historyTotal / historyPageSize), con minimo 1.
-- currentRange = inicio-fin de la pagina actual segun historyPage, historyPageSize y historyTotal.
+- totalPages = max(1, ceil(historyTotal / historyPageSize)).
+- currentRange se calcula con historyPage, historyPageSize e historyTotal.
 
-### 2) Estado de paginacion en store de ventas
-
-Archivo:
-
-- src/interface/store/salesStore.ts
-
-Cambios relevantes:
-
-- Se incorporan y exponen estos campos de estado:
-  - historyTotal
-  - historyPage
-  - historyPageSize
-- fetchSalesHistory recibe page y pageSize opcionales.
-- Se normalizan parametros de entrada para evitar valores invalidos:
-  - page: entero >= 1
-  - pageSize: entero > 0
-- Se invoca listPaginated en repositorio y se persiste en estado:
-  - salesHistory (slice de la pagina)
-  - historyTotal (conteo global)
-  - historyPage
-  - historyPageSize
-
-### 3) Hook de ventas con metadata de paginacion
-
-Archivo:
-
-- src/interface/hooks/useSales.ts
-
-Cambios relevantes:
-
-- El hook expone historyTotal, historyPage y historyPageSize.
-- El hook expone fetchSalesHistory(page?, pageSize?) para control desde UI.
-
-### 4) Contrato de repositorio para listado paginado
-
-Archivo:
-
-- src/core/repositories/SaleRepository.ts
-
-Contrato utilizado:
-
-- listPaginated(page, pageSize) => { sales, total }
-
-Esto separa claramente:
-
-- datos de la pagina actual,
-- y total de registros para calculo de paginas en la UI.
-
-### 5) Implementacion en capa renderer (Electron repository)
-
-Archivo:
-
-- src/interface/dev/ElectronSaleRepository.ts
-
-Cambios relevantes:
-
-- listPaginated(page, pageSize) consume window.electronAPI.saleListPaginated.
-- Reconstruye entidades Sale desde JSON para mantener compatibilidad con el dominio.
-
-### 6) Bridge y contratos IPC (renderer <-> main)
+## Estado en store y hook
 
 Archivos:
 
+- src/interface/store/salesStore.ts
+- src/interface/hooks/useSales.ts
+
+Datos expuestos para paginacion:
+
+- historyTotal
+- historyPage
+- historyPageSize
+- historyFilters (se conserva al paginar)
+
+Operacion principal:
+
+- fetchSalesHistory(page?, pageSize?, filters?)
+
+Reglas aplicadas:
+
+- page y pageSize se normalizan a valores seguros.
+- El store mantiene consistencia entre pagina, total y filtros.
+- registerSale refresca historial respetando pagina/filtros actuales.
+- Se evita race condition con latestHistoryRequestId para ignorar respuestas viejas.
+
+## Flujo de datos
+
+1. SalesPage invoca fetchSalesHistory.
+2. useSales delega a useSaleStore.
+3. El store llama listPaginated(page, pageSize, filters) en el repositorio.
+4. ElectronSaleRepository usa window.electronAPI.saleListPaginated.
+5. En main, el handler sale:listPaginated valida y delega a PrismaSaleRepository.
+6. Prisma retorna sales + total, y la UI renderiza la pagina actual.
+
+## Archivos tecnicos involucrados
+
+- src/core/repositories/SaleRepository.ts
+- src/interface/dev/ElectronSaleRepository.ts
 - src/electron/preload.ts
 - src/electron.d.ts
 - src/electron/ipcHandlers.ts
-
-Canal utilizado:
-
-- sale:listPaginated
-
-Comportamiento aplicado:
-
-- El preload expone saleListPaginated(page, pageSize).
-- electron.d.ts tipa el metodo y su retorno.
-- ipcHandlers normaliza page/pageSize (safePage, safePageSize).
-- ipcHandlers delega a saleRepository.listPaginated y retorna { sales, total }.
-
-### 7) Implementaciones de persistencia
-
-Archivos:
-
 - src/infrastructure/persistence/PrismaSaleRepository.ts
 - src/interface/dev/InMemorySaleRepository.ts
 
-Comportamiento aplicado:
+## Prueba rapida
 
-- PrismaSaleRepository:
-  - Usa skip/take segun pagina y tamano.
-  - Ordena por created_at desc.
-  - Retorna total con count global.
-- InMemorySaleRepository:
-  - Ordena por createdAt desc.
-  - Calcula slice por pagina.
-  - Retorna total de ventas en memoria.
-  - Incluye saneamiento de page/pageSize.
-
-## Flujo de datos (end-to-end)
-
-1. SalesPage solicita fetchSalesHistory(page, pageSize).
-2. useSales delega al Zustand store.
-3. salesStore llama repo.listPaginated(page, pageSize).
-4. ElectronSaleRepository llama IPC sale:listPaginated.
-5. ipcHandlers solicita a saleRepository.listPaginated.
-6. Prisma/InMemory retornan { sales, total }.
-7. UI renderiza tabla, rango y controles de navegacion.
-
-## Impacto esperado
-
-- Mejor rendimiento percibido en historiales largos.
-- Menor carga inicial en pantalla de ventas.
-- Mejor legibilidad operativa con contexto de pagina y total.
-- Base lista para futuras mejoras (selector de pageSize, salto directo de pagina, filtros).
-
-## Como probar
-
-1. Levantar la app (Electron + renderer).
-2. Ir a la pantalla de Ventas.
-3. Verificar que carga pagina 1 y muestra rango + total.
-4. Presionar Siguiente y validar cambio de pagina.
-5. Presionar Anterior y validar retorno de pagina.
-6. Confirmar estados disabled en bordes:
-   - pagina 1 => Anterior disabled
-   - ultima pagina => Siguiente disabled
-7. Registrar una venta nueva y validar que el historial se mantiene paginado y consistente con total.
-
-## Notas tecnicas
-
-- Tamaño por defecto de pagina en store: 10.
-- Hay saneamiento de parametros tanto en renderer store como en proceso main para robustez.
-- Fecha del reporte: 2026-04-19.
+1. Abrir Ventas con datos cargados.
+2. Verificar rango y total mostrados.
+3. Ir a Siguiente y regresar a Anterior.
+4. Confirmar disabled en primera y ultima pagina.
+5. Confirmar que al registrar una nueva venta el historial se mantiene consistente.

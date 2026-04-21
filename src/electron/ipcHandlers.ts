@@ -84,6 +84,11 @@ interface ProductJSON {
   deletedAt: string | null;
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId";
+  sortDirection?: "asc" | "desc";
+}
+
 interface ProductTypeJSON {
   id: string;
   name: string;
@@ -245,6 +250,14 @@ function registerProductHandlers() {
   ipcMain.handle("product:list", async () => {
     const products = await productRepository.list();
     return products.map((product) => product.toJSON());
+  });
+
+  ipcMain.handle("product:listPaginated", async (_event, page: number, pageSize: number, options?: ProductListSortOptionsJSON) => {
+    const result = await productRepository.listPaginated(page, pageSize, options);
+    return {
+      products: result.products.map((product) => product.toJSON()),
+      total: result.total,
+    };
   });
 
   ipcMain.handle("product:findById", async (_event, id: string) => {

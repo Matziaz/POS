@@ -16,6 +16,11 @@ interface ProductJSON {
   deletedAt: string | null
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId"
+  sortDirection?: "asc" | "desc"
+}
+
 interface ProductTypeJSON {
   id: string
   name: string
@@ -189,6 +194,7 @@ interface CashClosureCloseResultJSON {
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
+  productListPaginated(page: number, pageSize: number, options?: ProductListSortOptionsJSON): Promise<{ products: ProductJSON[]; total: number }>
   productFindById(id: string): Promise<ProductJSON | null>
   productFindBySku(sku: string): Promise<ProductJSON | null>
   productListDeleted(): Promise<ProductJSON[]>

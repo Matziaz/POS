@@ -41,6 +41,16 @@ Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyec
    - Persistencia de filtros aplicados en store y navegacion por pagina
    - Validaciones de rango, normalizacion de fechas y proteccion contra respuestas viejas
 
+8. **[README_PAGINACION_PRODUCTOS.md](./README_PAGINACION_PRODUCTOS.md)** — Paginacion de productos en inventario
+   - Carga paginada de productos activos desde repositorio e IPC
+   - Estado de pagina, total y ordenamiento en store/hook de productos
+   - Navegacion Anterior/Siguiente con metadatos de rango en UI
+
+9. **[README_FILTROS_PRODUCTOS.md](./README_FILTROS_PRODUCTOS.md)** — Estado de filtros/ordenamiento de productos
+   - Documenta el estado actual: ordenamiento por columnas
+   - Aclara filtros aun no implementados en Inventario
+   - Incluye propuesta tecnica para evolucionar a filtros reales
+
 ## Por Donde Empezar
 
 **Paso 1 — Solo si nunca trabajaste con desarrollo web:**
