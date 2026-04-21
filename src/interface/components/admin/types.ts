@@ -5,6 +5,10 @@ export interface AdminProductType {
   name: string
 }
 
+export interface AdminDeletedProductType extends AdminProductType {
+  deletedAt: string | null
+}
+
 export interface AdminUser {
   id: string
   username: string

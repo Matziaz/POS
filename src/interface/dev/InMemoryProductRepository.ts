@@ -9,9 +9,15 @@
  */
 
 import { Product } from "@core/entities"
-import type { ProductRepository } from "@core/repositories"
+import type { ProductListSortOptions, ProductRepository, SortDirection } from "@core/repositories"
 import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "@core/constants"
 import { newId } from "@core/services/id"
+
+function compareValues(left: string | number, right: string | number, direction: SortDirection): number {
+  if (left === right) return 0
+  const result = left < right ? -1 : 1
+  return direction === "desc" ? -result : result
+}
 
 export class InMemoryProductRepository implements ProductRepository {
   private products = new Map<string, Product>()
@@ -110,6 +116,43 @@ export class InMemoryProductRepository implements ProductRepository {
 
   async list(): Promise<Product[]> {
     return Array.from(this.products.values()).filter((product) => !product.deletedAt)
+  }
+
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    options?: ProductListSortOptions
+  ): Promise<{ products: Product[]; total: number }> {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+    const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10
+    const sortBy = options?.sortBy ?? "createdAt"
+    const sortDirection: SortDirection = options?.sortDirection ?? "desc"
+
+    const ordered = Array.from(this.products.values())
+      .filter((product) => !product.deletedAt)
+      .sort((left, right) => {
+        switch (sortBy) {
+          case "name":
+            return compareValues(left.name.toLowerCase(), right.name.toLowerCase(), sortDirection)
+          case "sku":
+            return compareValues(left.sku.toLowerCase(), right.sku.toLowerCase(), sortDirection)
+          case "price":
+            return compareValues(left.price, right.price, sortDirection)
+          case "stock":
+            return compareValues(left.stock, right.stock, sortDirection)
+          case "typeId":
+            return compareValues(left.typeId.toLowerCase(), right.typeId.toLowerCase(), sortDirection)
+          case "createdAt":
+          default:
+            return compareValues(new Date(left.createdAt).getTime(), new Date(right.createdAt).getTime(), sortDirection)
+        }
+      })
+
+    const start = (safePage - 1) * safePageSize
+    return {
+      products: ordered.slice(start, start + safePageSize),
+      total: ordered.length,
+    }
   }
 
   async listDeleted(): Promise<Product[]> {

@@ -16,9 +16,15 @@ interface ProductJSON {
   deletedAt: string | null
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId"
+  sortDirection?: "asc" | "desc"
+}
+
 interface ProductTypeJSON {
   id: string
   name: string
+  deletedAt?: string | null
 }
 
 interface ProductTypeCreateJSON {
@@ -106,6 +112,11 @@ interface SaleJSON {
   items: SaleItemJSON[]
 }
 
+interface SaleListFiltersJSON {
+  fromISO?: string
+  toISO?: string
+}
+
 interface InventoryMovementJSON {
   id: string
   productId: string
@@ -183,6 +194,7 @@ interface CashClosureCloseResultJSON {
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
+  productListPaginated(page: number, pageSize: number, options?: ProductListSortOptionsJSON): Promise<{ products: ProductJSON[]; total: number }>
   productFindById(id: string): Promise<ProductJSON | null>
   productFindBySku(sku: string): Promise<ProductJSON | null>
   productListDeleted(): Promise<ProductJSON[]>
@@ -190,9 +202,11 @@ interface ElectronAPI {
   productDelete(id: string): Promise<void>
   productRestore(id: string, stock: number): Promise<void>
   productTypeList(): Promise<ProductTypeJSON[]>
+  productTypeListDeleted(): Promise<ProductTypeJSON[]>
   productTypeCreate(data: ProductTypeCreateJSON): Promise<void>;
   productTypeUpdate(data: ProductTypeUpdateJSON): Promise<void>;
   productTypeDelete(id: string): Promise<void>;
+  productTypeRestore(id: string): Promise<void>;
   roleList(): Promise<RoleJSON[]>;
   roleCreate(data: RoleCreateJSON): Promise<void>;
   roleUpdate(data: RoleUpdateJSON): Promise<void>;
@@ -213,6 +227,7 @@ interface ElectronAPI {
   saleCountByDateRange(fromISO: string, toISO: string): Promise<number>
   saleFindById(id: string): Promise<SaleJSON | null>
   saleSave(data: SaleJSON): Promise<void>
+  saleListPaginated(page: number, pageSize: number, filters?: SaleListFiltersJSON): Promise<{ sales: SaleJSON[]; total: number }>
   
   // Payment Methods
   paymentMethodListActive(): Promise<any[]>

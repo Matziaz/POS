@@ -11,6 +11,7 @@ import {
   AdminPaymentMethodsSection,
   AdminConfigurationSection,
   type AdminSection,
+  type AdminDeletedProductType,
   type AdminProductType,
   type AdminRole,
   type AdminUser,
@@ -33,6 +34,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
   } = useProducts()
 
   const [activeSection, setActiveSection] = useState<AdminSection>(initialSection)
+  const [restoreTarget, setRestoreTarget] = useState<"products" | "productTypes">("products")
   const [search, setSearch] = useState("")
   const [notification, setNotification] = useState<{
     type: "success" | "error"
@@ -42,6 +44,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
   const [restoreOpen, setRestoreOpen] = useState(false)
 
   const [productTypes, setProductTypes] = useState<AdminProductType[]>([])
+  const [deletedProductTypes, setDeletedProductTypes] = useState<AdminDeletedProductType[]>([])
+  const [isLoadingDeletedProductTypes, setIsLoadingDeletedProductTypes] = useState(false)
   const [roles, setRoles] = useState<AdminRole[]>([])
   const [users, setUsers] = useState<AdminUser[]>([])
   const [paymentMethods, setPaymentMethods] = useState<AdminPaymentMethod[]>([])
@@ -87,6 +91,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
     }
   }
 
+  const loadDeletedProductTypes = async () => {
+    setIsLoadingDeletedProductTypes(true)
+    if (!electronAPI?.productTypeListDeleted) {
+      setDeletedProductTypes([])
+      setIsLoadingDeletedProductTypes(false)
+      return
+    }
+
+    try {
+      const types = await electronAPI.productTypeListDeleted()
+      setDeletedProductTypes(
+        types.map((type) => ({
+          id: type.id,
+          name: type.name,
+          deletedAt: type.deletedAt ?? null,
+        }))
+      )
+    } finally {
+      setIsLoadingDeletedProductTypes(false)
+    }
+  }
+
   useEffect(() => {
     setActiveSection(initialSection)
   }, [initialSection])
@@ -127,10 +153,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
 
   useEffect(() => {
     if (activeSection !== "restore") return
-    void fetchDeletedProducts()
+    if (restoreTarget === "products") {
+      void fetchDeletedProducts()
+      return
+    }
+
+    void loadDeletedProductTypes()
     // Ejecutar solo cuando se entra a la seccion de restauracion.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSection])
+  }, [activeSection, restoreTarget])
 
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -140,6 +171,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
         product.name.toLowerCase().includes(term) || product.sku.toLowerCase().includes(term)
     )
   }, [deletedProducts, search])
+
+  const filteredDeletedProductTypes = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return deletedProductTypes
+    return deletedProductTypes.filter((type) => type.name.toLowerCase().includes(term))
+  }, [deletedProductTypes, search])
 
   const handleOpenRestore = (product: ProductProps) => {
     setSelected(product)
@@ -163,6 +200,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
         err instanceof Error ? err.message : "No se pudo restaurar el producto"
       )
       throw err
+    }
+  }
+
+  const handleRestoreProductType = async (productType: AdminDeletedProductType) => {
+    if (!electronAPI?.productTypeRestore) {
+      showNotification("error", "Electron API no disponible")
+      return
+    }
+
+    try {
+      await electronAPI.productTypeRestore(productType.id)
+      await Promise.all([loadDeletedProductTypes(), loadSetupData()])
+      showNotification("success", `"${productType.name}" restaurado correctamente.`)
+    } catch (err) {
+      showNotification(
+        "error",
+        err instanceof Error ? err.message : "No se pudo restaurar el tipo de producto"
+      )
     }
   }
 
@@ -289,14 +344,26 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
 
       {activeSection === "restore" && (
         <AdminRestoreSection
+          restoreTarget={restoreTarget}
+          onRestoreTargetChange={(target) => {
+            setRestoreTarget(target)
+            setSearch("")
+          }}
           search={search}
           onSearchChange={setSearch}
           onRefresh={() => {
-            void fetchDeletedProducts()
+            if (restoreTarget === "products") {
+              void fetchDeletedProducts()
+              return
+            }
+
+            void loadDeletedProductTypes()
           }}
-          isLoading={isLoading}
+          isLoading={restoreTarget === "products" ? isLoading : isLoadingDeletedProductTypes}
           products={filteredProducts}
+          deletedProductTypes={filteredDeletedProductTypes}
           onRestoreClick={handleOpenRestore}
+          onRestoreProductTypeClick={handleRestoreProductType}
         />
       )}
 

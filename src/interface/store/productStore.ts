@@ -10,6 +10,7 @@
 
 import { create } from "zustand"
 import type { ProductProps } from "@core/entities"
+import type { ProductListSortOptions } from "@core/repositories"
 import { getProductService, getProductRepository } from "@interface/dev/serviceFactory"
 
 export interface CreateProductInput {
@@ -35,12 +36,25 @@ export interface UpdateProductInput {
 interface ProductState {
   products: ProductProps[]
   deletedProducts: ProductProps[]
+  inventoryProducts: ProductProps[]
+  inventoryTotal: number
+  inventoryPage: number
+  inventoryPageSize: number
+  inventorySortBy: ProductListSortOptions["sortBy"]
+  inventorySortDirection: ProductListSortOptions["sortDirection"]
   isLoading: boolean
+  isInventoryLoading: boolean
   error: string | null
   selectedProduct: ProductProps | null
 
   fetchProducts: () => Promise<void>
   fetchDeletedProducts: () => Promise<void>
+  fetchInventoryProducts: (
+    page?: number,
+    pageSize?: number,
+    sortBy?: ProductListSortOptions["sortBy"],
+    sortDirection?: ProductListSortOptions["sortDirection"]
+  ) => Promise<void>
   addProduct: (input: CreateProductInput) => Promise<void>
   updateProduct: (id: string, input: UpdateProductInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -49,10 +63,19 @@ interface ProductState {
   clearError: () => void
 }
 
+let inventoryRequestId = 0
+
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   deletedProducts: [],
+  inventoryProducts: [],
+  inventoryTotal: 0,
+  inventoryPage: 1,
+  inventoryPageSize: 12,
+  inventorySortBy: "createdAt",
+  inventorySortDirection: "desc",
   isLoading: false,
+  isInventoryLoading: false,
   error: null,
   selectedProduct: null,
 
@@ -84,6 +107,49 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
+  fetchInventoryProducts: async (page, pageSize, sortBy, sortDirection) => {
+    const requestId = ++inventoryRequestId
+    const nextPage = Number.isFinite(page ?? NaN) && (page ?? 0) > 0 ? Math.floor(page as number) : get().inventoryPage
+    const nextPageSize =
+      Number.isFinite(pageSize ?? NaN) && (pageSize ?? 0) > 0
+        ? Math.floor(pageSize as number)
+        : get().inventoryPageSize
+    const nextSortBy = sortBy ?? get().inventorySortBy ?? "createdAt"
+    const nextSortDirection = sortDirection ?? get().inventorySortDirection ?? "desc"
+
+    set({
+      isInventoryLoading: true,
+      error: null,
+      inventoryPage: nextPage,
+      inventoryPageSize: nextPageSize,
+      inventorySortBy: nextSortBy,
+      inventorySortDirection: nextSortDirection,
+    })
+
+    try {
+      const repo = getProductRepository()
+      const result = await repo.listPaginated(nextPage, nextPageSize, {
+        sortBy: nextSortBy,
+        sortDirection: nextSortDirection,
+      })
+
+      if (requestId !== inventoryRequestId) return
+
+      set({
+        inventoryProducts: result.products.map((p) => p.toJSON()),
+        inventoryTotal: result.total,
+        isInventoryLoading: false,
+      })
+    } catch (err) {
+      if (requestId !== inventoryRequestId) return
+
+      set({
+        error: err instanceof Error ? err.message : "Error al cargar inventario paginado",
+        isInventoryLoading: false,
+      })
+    }
+  },
+
   addProduct: async (input: CreateProductInput) => {
     set({ isLoading: true, error: null })
     try {
@@ -98,6 +164,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
         providerId: input.providerId,
       })
       await get().fetchProducts()
+      await get().fetchInventoryProducts(
+        get().inventoryPage,
+        get().inventoryPageSize,
+        get().inventorySortBy,
+        get().inventorySortDirection
+      )
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al crear producto",
@@ -122,6 +194,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
         image: input.image,
       })
       await get().fetchProducts()
+      await get().fetchInventoryProducts(
+        get().inventoryPage,
+        get().inventoryPageSize,
+        get().inventorySortBy,
+        get().inventorySortDirection
+      )
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al actualizar producto",
@@ -139,6 +217,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
       await repo.delete(id)
       await get().fetchProducts()
       await get().fetchDeletedProducts()
+      await get().fetchInventoryProducts(
+        get().inventoryPage,
+        get().inventoryPageSize,
+        get().inventorySortBy,
+        get().inventorySortDirection
+      )
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al eliminar producto",
@@ -155,6 +239,12 @@ export const useProductStore = create<ProductState>((set, get) => ({
       await service.restoreProduct({ id, stock })
       await get().fetchProducts()
       await get().fetchDeletedProducts()
+      await get().fetchInventoryProducts(
+        get().inventoryPage,
+        get().inventoryPageSize,
+        get().inventorySortBy,
+        get().inventorySortDirection
+      )
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Error al restaurar producto",

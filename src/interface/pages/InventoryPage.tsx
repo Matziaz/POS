@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { Plus } from "lucide-react"
 import type { ProductProps } from "@core/entities"
 import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "@core/constants"
+import type { ProductSortField, SortDirection } from "@core/repositories"
 import { useProducts } from "@interface/hooks/useProducts"
 import {
   ProductTable,
@@ -13,23 +14,26 @@ import { Button } from "@interface/components/ui/button"
 
 export const InventoryPage: React.FC = () => {
   const {
-    products,
-    isLoading,
+    inventoryProducts,
+    inventoryTotal,
+    inventoryPage,
+    inventoryPageSize,
+    inventorySortBy,
+    inventorySortDirection,
+    isInventoryLoading,
     error,
     addProduct,
     updateProduct,
     deleteProduct,
     clearError,
-    refetch,
-  } = useProducts()
+    fetchInventoryProducts,
+  } = useProducts({ autoFetch: false })
 
-  // Estado de los modales
   const [formOpen, setFormOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<ProductProps | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<ProductProps | null>(null)
 
-  // Notificaciones simples (toast inline)
   const [notification, setNotification] = useState<{
     type: "success" | "error"
     message: string
@@ -93,6 +97,12 @@ export const InventoryPage: React.FC = () => {
     }
   }, [])
 
+  useEffect(() => {
+    void fetchInventoryProducts()
+    // Carga inicial del inventario paginado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const typeNameById = useMemo<Record<string, string>>(() => {
     const entries = productTypes.map((type) => [type.id, type.name])
     return Object.fromEntries(entries)
@@ -103,12 +113,14 @@ export const InventoryPage: React.FC = () => {
     return Object.fromEntries(entries)
   }, [providers])
 
+  const totalPages = Math.max(1, Math.ceil(inventoryTotal / inventoryPageSize))
+  const startItem = inventoryTotal === 0 ? 0 : (inventoryPage - 1) * inventoryPageSize + 1
+  const endItem = Math.min(inventoryTotal, inventoryPage * inventoryPageSize)
+
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message })
     setTimeout(() => setNotification(null), 3000)
   }
-
-  // --- Handlers ---
 
   const handleCreate = () => {
     setEditingProduct(null)
@@ -162,28 +174,35 @@ export const InventoryPage: React.FC = () => {
     setDeletingProduct(null)
   }
 
+  const handleSortChange = async (field: ProductSortField) => {
+    const nextDirection: SortDirection = inventorySortBy === field && inventorySortDirection === "asc" ? "desc" : "asc"
+    await fetchInventoryProducts(1, inventoryPageSize, field, nextDirection)
+  }
+
+  const changePage = async (nextPage: number) => {
+    await fetchInventoryProducts(nextPage, inventoryPageSize, inventorySortBy, inventorySortDirection)
+  }
+
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Inventario</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona los productos de tu negocio
+          <p className="mt-1 text-muted-foreground">
+            Gestiona los productos con paginacion y ordenamiento.
           </p>
         </div>
         <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Nuevo Producto
         </Button>
       </div>
 
-      {/* Notificación global (toast inline) */}
       {notification && (
         <div
           className={`mb-4 rounded-md p-3 text-sm ${
             notification.type === "success"
-              ? "bg-green-50 text-green-800 border border-green-200"
+              ? "border border-green-200 bg-green-50 text-green-800"
               : "bg-destructive/10 text-destructive"
           }`}
         >
@@ -191,12 +210,15 @@ export const InventoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Error del store */}
       {error && (
-        <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           <span>{error}</span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void fetchInventoryProducts(inventoryPage, inventoryPageSize, inventorySortBy, inventorySortDirection)}
+            >
               Reintentar
             </Button>
             <Button variant="ghost" size="sm" onClick={clearError}>
@@ -206,25 +228,50 @@ export const InventoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Contador de productos */}
-      {!isLoading && products.length > 0 && (
-        <p className="text-sm text-muted-foreground mb-4">
-          {products.length} producto{products.length !== 1 ? "s" : ""} registrado{products.length !== 1 ? "s" : ""}
-        </p>
-      )}
 
-      {/* Tabla de productos */}
+      {!isInventoryLoading && inventoryTotal > 0 && (
+              <div className="mb-4 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                <span>
+                  Mostrando {startItem}-{endItem} de {inventoryTotal} producto{inventoryTotal === 1 ? "" : "s"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={inventoryPage <= 1 || isInventoryLoading}
+                    onClick={() => void changePage(inventoryPage - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <span>
+                    Página {inventoryPage} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={inventoryPage >= totalPages || isInventoryLoading}
+                    onClick={() => void changePage(inventoryPage + 1)}
+                  >
+                    Siguiente
+                  </Button>
+                  </div>
+              </div>
+            )}
+
+
       <ProductTable
-        products={products}
-        isLoading={isLoading && !isMutating}
+        products={inventoryProducts}
+        isLoading={isInventoryLoading && !isMutating}
         typeNameById={typeNameById}
         providerNameById={providerNameById}
+        sortBy={inventorySortBy}
+        sortDirection={inventorySortDirection}
+        onSortChange={(field) => void handleSortChange(field)}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
         onCreate={handleCreate}
       />
 
-      {/* Modal: Crear/Editar producto */}
       <ProductForm
         open={formOpen}
         product={editingProduct}
@@ -234,7 +281,6 @@ export const InventoryPage: React.FC = () => {
         onSubmit={handleFormSubmit}
       />
 
-      {/* Modal: Confirmar eliminación */}
       <ProductDeleteDialog
         open={deleteOpen}
         product={deletingProduct}

@@ -4,4 +4,11 @@ export { AdminSetupSection } from "./AdminSetupSection"
 export { AdminRestoreSection } from "./AdminRestoreSection"
 export { AdminPaymentMethodsSection } from "./AdminPaymentMethodsSection"
 export { AdminConfigurationSection } from "./AdminConfigurationSection"
-export type { AdminSection, AdminProductType, AdminUser, AdminRole, AdminPaymentMethod } from "@interface/components/admin/types"
+export type {
+	AdminSection,
+	AdminProductType,
+	AdminDeletedProductType,
+	AdminRole,
+	AdminUser,
+	AdminPaymentMethod,
+} from "@interface/components/admin/types"

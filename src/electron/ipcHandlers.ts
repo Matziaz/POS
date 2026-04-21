@@ -84,6 +84,11 @@ interface ProductJSON {
   deletedAt: string | null;
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId";
+  sortDirection?: "asc" | "desc";
+}
+
 interface ProductTypeJSON {
   id: string;
   name: string;
@@ -113,6 +118,11 @@ interface SaleJSON {
   total: number;
   createdAt: string;
   items: SaleItemJSON[];
+}
+
+interface SaleListFiltersJSON {
+  fromISO?: string;
+  toISO?: string;
 }
 
 interface InventoryMovementJSON {
@@ -262,6 +272,14 @@ function registerProductHandlers() {
     return products.map((product) => product.toJSON());
   });
 
+  ipcMain.handle("product:listPaginated", async (_event, page: number, pageSize: number, options?: ProductListSortOptionsJSON) => {
+    const result = await productRepository.listPaginated(page, pageSize, options);
+    return {
+      products: result.products.map((product) => product.toJSON()),
+      total: result.total,
+    };
+  });
+
   ipcMain.handle("product:findById", async (_event, id: string) => {
     const product = await productRepository.findById(id);
     return product ? product.toJSON() : null;
@@ -312,6 +330,11 @@ function registerProductHandlers() {
     return rows.map((row) => row.toJSON());
   });
 
+  ipcMain.handle("productType:listDeleted", async (): Promise<ProductTypeJSON[]> => {
+    const rows = await adminSetupService.listDeletedProductTypes();
+    return rows.map((row) => row.toJSON());
+  });
+
   ipcMain.handle("productType:create", async (_event, data: ProductTypeCreateJSON): Promise<void> => {
     await adminSetupService.createProductType({ name: data.name });
   });
@@ -323,14 +346,49 @@ function registerProductHandlers() {
   ipcMain.handle("productType:delete", async (_event, id: string): Promise<void> => {
     await adminSetupService.deleteProductType(id);
   });
+
+  ipcMain.handle("productType:restore", async (_event, id: string): Promise<void> => {
+    await adminSetupService.restoreProductType(id);
+  });
+
 }
 
 // ─── Sale handlers ────────────────────────────────────────────────────────────
 
 function registerSaleHandlers() {
+  const normalizeFilters = (filters?: SaleListFiltersJSON): SaleListFiltersJSON | undefined => {
+    const fromISO = typeof filters?.fromISO === "string" && filters.fromISO.trim() ? filters.fromISO : undefined;
+    const toISO = typeof filters?.toISO === "string" && filters.toISO.trim() ? filters.toISO : undefined;
+
+    const fromMs = fromISO ? new Date(fromISO).getTime() : null;
+    const toMs = toISO ? new Date(toISO).getTime() : null;
+
+    if ((fromISO && Number.isNaN(fromMs ?? NaN)) || (toISO && Number.isNaN(toMs ?? NaN))) {
+      throw new Error("Invalid date filter");
+    }
+
+    if (fromMs !== null && toMs !== null && fromMs >= toMs) {
+      throw new Error("Invalid date range: fromISO must be before toISO");
+    }
+
+    if (!fromISO && !toISO) return undefined;
+    return { fromISO, toISO };
+  };
+
   ipcMain.handle("sale:list", async () => {
     const sales = await saleRepository.list();
     return sales.map((sale) => sale.toJSON());
+  });
+
+  ipcMain.handle("sale:listPaginated", async (_event, page: number, pageSize: number, filters?: SaleListFiltersJSON) => {
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10;
+    const normalizedFilters = normalizeFilters(filters);
+    const result = await saleRepository.listPaginated(safePage, safePageSize, normalizedFilters);
+    return {
+      sales: result.sales.map((sale) => sale.toJSON()),
+      total: result.total,
+    };
   });
 
   ipcMain.handle("sale:listByDateRange", async (_event, fromISO: string, toISO: string) => {

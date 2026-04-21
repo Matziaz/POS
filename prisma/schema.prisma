@@ -28,7 +28,7 @@ model product {
   created_at         String               @default("CURRENT_TIMESTAMP")
   deleted_at         String?
   inventory_movement inventory_movement[]
-  product_type       product_type         @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction) @ignore
+  product_type       product_type         @relation(fields: [type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   provider           provider             @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   sale_item          sale_item[]
 }
@@ -88,13 +88,11 @@ model app_configuration {
   is_active      Int    @default(1)
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model product_type {
-  id      String?   @id
-  name    String
-  product product[]
-
-  @@ignore
+  id         String    @id
+  name       String
+  deleted_at String?
+  product    product[]
 }
 
 model cash_closure {
