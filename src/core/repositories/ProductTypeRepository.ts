@@ -7,5 +7,7 @@ export interface ProductTypeRepository {
   findById(id: string): Promise<ProductType | null>;
   findByName(name: string): Promise<ProductType | null>;
   list(): Promise<ProductType[]>;
+  listDeleted(): Promise<ProductType[]>;
+  restore(id: string): Promise<void>;
   countProductsUsingType(typeId: string): Promise<number>;
 }

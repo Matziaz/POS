@@ -1,34 +1,39 @@
-import React, { useState } from "react"
-import { Plus } from "lucide-react"
+import React, { useEffect, useMemo, useState } from "react"
 import type { SaleView } from "@interface/store/salesStore"
 import { useSales } from "@interface/hooks/useSales"
-import { useProducts } from "@interface/hooks/useProducts"
-import { SalesTable, SaleDetailDialog, SaleForm } from "@interface/components/sales"
-import { CURRENCY_SYMBOL, DECIMAL_PLACES } from "@shared/constants"
+import { SalesDateTimeRangePicker, SalesTable, SaleDetailDialog } from "@interface/components/sales"
 import { Button } from "@interface/components/ui/button"
 
 export const SalesPage: React.FC = () => {
   const {
-    sales,
+    salesHistory,
+    historyTotal,
+    historyPage,
+    historyPageSize,
+    historyFilters,
     isLoading,
     error,
-    registerSale,
+    fetchSalesHistory,
     clearError,
-  } = useSales()
+  } = useSales({ autoFetch: false })
 
-  const { products, refetch: refetchProducts } = useProducts()
 
   const [detailOpen, setDetailOpen] = useState(false)
   const [viewingSale, setViewingSale] = useState<SaleView | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
+
+  useEffect(() => {
+    void fetchSalesHistory(1, historyPageSize, historyFilters)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // --- Resumen ---
-  const totalVentas = sales.length
-  const totalIngresos = sales.reduce((acc, s) => acc + s.total, 0)
-  const totalArticulos = sales.reduce(
-    (acc, s) => acc + s.items.reduce((sum, item) => sum + item.quantity, 0),
-    0
-  )
+  const totalPages = Math.max(1, Math.ceil(historyTotal / historyPageSize))
+  const currentRange = useMemo(() => {
+    if (historyTotal === 0) return "0-0"
+    const start = (historyPage - 1) * historyPageSize + 1
+    const end = Math.min(historyPage * historyPageSize, historyTotal)
+    return `${start}-${end}`
+  }, [historyPage, historyPageSize, historyTotal])
 
   // --- Handlers ---
   const handleViewDetail = (sale: SaleView) => {
@@ -41,24 +46,14 @@ export const SalesPage: React.FC = () => {
     setViewingSale(null)
   }
 
-  const handleRegisterSale = async (lines: { productSku: string; qty: number }[]) => {
-    const total = lines.reduce((sum, line) => {
-      const product = products.find((item) => item.sku === line.productSku)
-      if (!product) {
-        throw new Error(`No se encontro el producto para SKU ${line.productSku}`)
-      }
-      return sum + product.price * line.qty
-    }, 0)
+  const handlePreviousPage = async () => {
+    if (historyPage <= 1 || isLoading) return
+    await fetchSalesHistory(historyPage - 1, historyPageSize, historyFilters)
+  }
 
-    await registerSale(lines, [
-      {
-        paymentMethodId: "cash",
-        amount: total,
-        tendered: total,
-        changeDue: 0,
-      },
-    ])
-    await refetchProducts()
+  const handleNextPage = async () => {
+    if (historyPage >= totalPages || isLoading) return
+    await fetchSalesHistory(historyPage + 1, historyPageSize, historyFilters)
   }
 
   return (
@@ -71,28 +66,48 @@ export const SalesPage: React.FC = () => {
             Historial de ventas registradas
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Venta
-        </Button>
       </div>
 
-      {/* Tarjetas de resumen */}
-      {!isLoading && sales.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Total de ventas</p>
-            <p className="text-2xl font-bold mt-1">{totalVentas}</p>
-          </div>
-          <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Ingresos totales</p>
-            <p className="text-2xl font-bold mt-1">
-              {CURRENCY_SYMBOL}{totalIngresos.toFixed(DECIMAL_PLACES)}
-            </p>
-          </div>
-          <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Artículos vendidos</p>
-            <p className="text-2xl font-bold mt-1">{totalArticulos}</p>
+      <div className="mb-4">
+        <SalesDateTimeRangePicker
+          value={historyFilters}
+          disabled={isLoading}
+          onApply={async (filters) => {
+            clearError()
+            await fetchSalesHistory(1, historyPageSize, filters)
+          }}
+          onClear={async () => {
+            clearError()
+            await fetchSalesHistory(1, historyPageSize, {})
+          }}
+        />
+      </div>
+
+      {!isLoading && historyTotal > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span>
+            Mostrando {currentRange} de {historyTotal} ventas
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handlePreviousPage()}
+              disabled={historyPage <= 1 || isLoading}
+            >
+              Anterior
+            </Button>
+            <span>
+              Página {historyPage} de {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void handleNextPage()}
+              disabled={historyPage >= totalPages || isLoading}
+            >
+              Siguiente
+            </Button>
           </div>
         </div>
       )}
@@ -109,7 +124,7 @@ export const SalesPage: React.FC = () => {
 
       {/* Tabla de ventas */}
       <SalesTable
-        sales={sales}
+        sales={salesHistory}
         isLoading={isLoading}
         onViewDetail={handleViewDetail}
       />
@@ -119,14 +134,6 @@ export const SalesPage: React.FC = () => {
         open={detailOpen}
         sale={viewingSale}
         onClose={handleDetailClose}
-      />
-
-      {/* Modal: Registrar venta */}
-      <SaleForm
-        open={formOpen}
-        products={products}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleRegisterSale}
       />
     </div>
   )

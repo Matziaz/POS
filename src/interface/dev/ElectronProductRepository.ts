@@ -8,7 +8,7 @@
  */
 
 import { Product } from "@core/entities"
-import type { ProductRepository } from "@core/repositories"
+import type { ProductListSortOptions, ProductRepository } from "@core/repositories"
 
 function getAPI(): NonNullable<typeof window.electronAPI> {
   const api = window.electronAPI
@@ -44,6 +44,18 @@ export class ElectronProductRepository implements ProductRepository {
   async list(): Promise<Product[]> {
     const rows = await getAPI().productList()
     return rows.map((json: any) => Product.create(json))
+  }
+
+  async listPaginated(
+    page: number,
+    pageSize: number,
+    options?: ProductListSortOptions
+  ): Promise<{ products: Product[]; total: number }> {
+    const result = await getAPI().productListPaginated(page, pageSize, options)
+    return {
+      products: result.products.map((json: any) => Product.create(json)),
+      total: result.total,
+    }
   }
 
   async listDeleted(): Promise<Product[]> {

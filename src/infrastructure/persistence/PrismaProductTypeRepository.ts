@@ -3,10 +3,17 @@ import { ProductType } from "../../core/entities";
 import type { ProductTypeRepository } from "../../core/repositories";
 import { prisma } from "../database/prismaClient";
 
-function toDomain(row: { id: string | null; name: string }): ProductType {
+function toISOOrNow(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
+function toDomain(row: { id: string | null; name: string; deleted_at: string | null }): ProductType {
   return ProductType.create({
     id: row.id ?? "",
     name: row.name,
+    deletedAt: typeof row.deleted_at === "string" ? toISOOrNow(row.deleted_at) : null,
   });
 }
 
@@ -15,29 +22,34 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
 
   async save(productType: ProductType): Promise<void> {
     const p = productType.toJSON();
-    await this.db.$executeRawUnsafe(
-      "INSERT INTO product_type (id, name) VALUES (?, ?)",
-      p.id,
-      p.name
-    );
+    const createData: any = {
+      name: p.name,
+      deleted_at: p.deletedAt ?? null,
+    };
+    await this.db.product_type.create({
+      data: { ...createData, id: p.id },
+    });
+
   }
 
   async update(productType: ProductType): Promise<void> {
     const p = productType.toJSON();
-    await this.db.$executeRawUnsafe(
-      "UPDATE product_type SET name = ? WHERE id = ?",
-      p.name,
-      p.id
-    );
+    await this.db.product_type.update({
+      where: { id: p.id },
+      data: { name: p.name },
+    });
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.$executeRawUnsafe("DELETE FROM product_type WHERE id = ?", id);
+    await this.db.product_type.update({
+      where: { id },
+      data: { deleted_at: new Date().toISOString() },
+    });
   }
 
   async findById(id: string): Promise<ProductType | null> {
-    const rows = await this.db.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
-      "SELECT id, name FROM product_type WHERE id = ? LIMIT 1",
+    const rows = await this.db.$queryRawUnsafe<Array<{ id: string | null; name: string; deleted_at: string | null }>>(
+      "SELECT id, name, deleted_at FROM product_type WHERE id = ? LIMIT 1",
       id
     );
 
@@ -46,8 +58,8 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
   }
 
   async findByName(name: string): Promise<ProductType | null> {
-    const rows = await this.db.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
-      "SELECT id, name FROM product_type WHERE LOWER(name) = LOWER(?) LIMIT 1",
+    const rows = await this.db.$queryRawUnsafe<Array<{ id: string | null; name: string; deleted_at: string | null }>>(
+      "SELECT id, name, deleted_at FROM product_type WHERE LOWER(name) = LOWER(?) LIMIT 1",
       name
     );
 
@@ -56,14 +68,28 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
   }
 
   async list(): Promise<ProductType[]> {
-    const rows = await this.db.$queryRawUnsafe<Array<{ id: string | null; name: string }>>(
-      "SELECT id, name FROM product_type WHERE id IS NOT NULL ORDER BY name ASC"
-    );
+    const rows = await this.db.product_type.findMany({  
+      orderBy: { name: "asc" as any } });
 
-    return rows.filter((row) => !!row.id).map(toDomain);
+    return rows.map(toDomain);
   }
 
   async countProductsUsingType(typeId: string): Promise<number> {
     return this.db.product.count({ where: { type_id: typeId } });
+  }
+
+  async listDeleted(): Promise<ProductType[]> {
+    const rows = await this.db.product_type.findMany({ 
+      where: { deleted_at: { not: null } }, 
+      orderBy: { name: "asc" as any } });
+
+    return rows.map(toDomain);
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.db.product_type.update({
+      where: { id },
+      data: { deleted_at: null },
+    });
   }
 }

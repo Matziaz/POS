@@ -22,9 +22,15 @@ interface ProductJSON {
   deletedAt: string | null;
 }
 
+interface ProductListSortOptionsJSON {
+  sortBy?: "createdAt" | "name" | "sku" | "price" | "stock" | "typeId";
+  sortDirection?: "asc" | "desc";
+}
+
 interface ProductTypeJSON {
   id: string;
   name: string;
+  deletedAt?: string | null;
 }
 
 interface ProductTypeCreateJSON {
@@ -112,6 +118,11 @@ interface SaleJSON {
   items: SaleItemJSON[];
 }
 
+interface SaleListFiltersJSON {
+  fromISO?: string;
+  toISO?: string;
+}
+
 interface InventoryMovementJSON {
   id: string;
   productId: string;
@@ -192,6 +203,12 @@ const electronAPI = {
   // Products
   productList: (): Promise<ProductJSON[]> =>
     ipcRenderer.invoke("product:list"),
+  productListPaginated: (
+    page: number,
+    pageSize: number,
+    options?: ProductListSortOptionsJSON
+  ): Promise<{ products: ProductJSON[]; total: number }> =>
+    ipcRenderer.invoke("product:listPaginated", page, pageSize, options),
   productFindById: (id: string): Promise<ProductJSON | null> =>
     ipcRenderer.invoke("product:findById", id),
   productFindBySku: (sku: string): Promise<ProductJSON | null> =>
@@ -206,12 +223,16 @@ const electronAPI = {
     ipcRenderer.invoke("product:restore", id, stock),
   productTypeList: (): Promise<ProductTypeJSON[]> =>
     ipcRenderer.invoke("productType:list"),
+  productTypeListDeleted: (): Promise<ProductTypeJSON[]> =>
+    ipcRenderer.invoke("productType:listDeleted"),
   productTypeCreate: (data: ProductTypeCreateJSON): Promise<void> =>
     ipcRenderer.invoke("productType:create", data),
   productTypeUpdate: (data: ProductTypeUpdateJSON): Promise<void> =>
     ipcRenderer.invoke("productType:update", data),
   productTypeDelete: (id: string): Promise<void> =>
     ipcRenderer.invoke("productType:delete", id),
+  productTypeRestore: (id: string): Promise<void> =>
+    ipcRenderer.invoke("productType:restore", id),
   roleList: (): Promise<RoleJSON[]> =>
     ipcRenderer.invoke("role:list"),
   roleCreate: (data: RoleCreateJSON): Promise<void> =>
@@ -250,6 +271,8 @@ const electronAPI = {
     ipcRenderer.invoke("sale:findById", id),
   saleSave: (data: SaleJSON): Promise<void> =>
     ipcRenderer.invoke("sale:save", data),
+  saleListPaginated: (page: number, pageSize: number, filters?: SaleListFiltersJSON): Promise<{ sales: SaleJSON[]; total: number }> =>
+    ipcRenderer.invoke("sale:listPaginated", page, pageSize, filters),
 
   // Inventory Movements
   inventoryMovementSave: (data: InventoryMovementJSON): Promise<void> =>

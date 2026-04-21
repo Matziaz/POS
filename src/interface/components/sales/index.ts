@@ -1,4 +1,5 @@
 export { SalesTable } from "./SalesTable"
 export { SaleDetailDialog } from "./SaleDetailDialog"
 export { SaleForm } from "./SaleForm"
+export { SalesDateTimeRangePicker } from "./SalesDateTimeRangePicker"
 export * from "./terminal"
