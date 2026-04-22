@@ -1,50 +1,101 @@
-# Visión del Producto
+# Qué es el POS Adaptable
 
-## Problema
+Es un sistema para registrar ventas, controlar tu inventario y entender cómo le va a tu negocio, sin necesidad de internet ni conocimientos técnicos.
 
-Los micro-comercios carecen de herramientas simples y accesibles para controlar sus ventas y entender el estado real de su negocio. Las soluciones existentes suelen requerir conexión constante a internet, capacitación técnica o infraestructura costosa, lo que provoca que muchos comercios operen sin información confiable para tomar decisiones.
+## El problema que resolvemos
 
-## Propuesta de Valor
+Muchos dueños de pequeños comercios operan como lo han hecho siempre: con un cuaderno y un bolígrafo. O quizás con una calculadora y un Excel en la computadora.
 
-Un sistema de Punto de Venta (POS) adaptable que funciona offline por defecto, se ejecuta en hardware accesible (Raspberry Pi) y transforma la operación diaria del comercio en información clara y accionable, sin exigir conocimientos técnicos al usuario.
+El resultado es que:
 
-El sistema acompaña al comerciante en su operación cotidiana y le entrega insights prácticos de forma proactiva, reduciendo la carga administrativa y el error humano.
+- No saben con certeza cuánto vendieron hoy o esta semana
+- No tienen claridad sobre qué productos se venden más
+- No pueden saber rápidamente si ganan o pierden dinero
+- Pierden tiempo contando manual y confirmando números
+- Cuando llega la hora de pagar impuestos, no tienen información clara
+- Si la computadora falla o pierden los datos, pierden todo
 
-## Usuario Objetivo
+Pero contratar un software profesional (como los que usan las grandes cadenas) es carísimo, requiere internet siempre conectado, y necesitas que alguien técnico lo configure y lo entienda. Eso no es para ti.
 
-- Micro y pequeños comercios
-- Operación diaria principalmente manual
-- Bajo o nulo nivel técnico
-- Necesidad de control básico, no de sistemas empresariales complejos
-- Uso continuo del sistema como herramienta central del negocio
+## La solución: un POS simple, confiable y tuyo
 
-## Resultado Esperado para el Usuario
+Este sistema está pensado específicamente para comercios como el tuyo:
 
-Al usar el sistema, el comerciante:
+- Funciona en cualquier computadora: una Raspberry Pi nueva (que cuesta poco), una computadora vieja que no uses, incluso un tablet. Lo importante es que sea tuya y esté bajo tu control
+- No necesita internet para trabajar. Sigues registrando ventas aunque se caiga la conexión
+- Es tan fácil de usar que no requiere capacitación. Es como usar una calculadora
+- Todo tu dinero y tus datos se quedan en tu computadora, bajo tu control
 
-- Registra ventas sin fricción
-- Mantiene control básico de su operación diaria
-- Comprende el desempeño de su negocio sin interpretar métricas complejas
-- Recibe información útil para tomar decisiones simples (qué vender más, qué revisar, qué ajustar)
-- Reduce la dependencia de procesos manuales e informales
+## Qué hace exactamente
 
-## Principios del Producto
+### Ahora mismo (ya funciona)
 
-- **Funcional antes que perfecto:** el sistema debe ser usable incluso si no es visualmente sofisticado
-- **Offline por defecto:** la operación no debe depender de conectividad
-- **Adaptable, no genérico:** el comportamiento del sistema se ajusta al tipo de comercio
-- **Información accionable:** se priorizan recomendaciones claras sobre métricas complejas
-- **Evolución incremental:** el producto crece conforme se valida su uso real
+**Registrar ventas:** Cuando un cliente compra, tocas los productos en la pantalla, confirmas el total y listo. Rápido y sin errores.
 
-## Límites del Producto (No-Objetivos)
+**Controlar inventario:** Sabes cuánto stock tienes de cada producto. El sistema avisa automáticamente cuando algo se te está acabando.
 
-- No es un sistema contable completo
-- No reemplaza software empresarial (ERP)
-- No requiere personal técnico para su operación
-- No prioriza analítica avanzada sobre simplicidad operativa
+**Ver cómo va tu negocio:** Un panel te muestra en tiempo real:
+- Cuánto vendiste hoy
+- Qué fue lo más vendido esta semana
+- Cómo compara con otras semanas
 
----
+**Cerrar caja:** Al final del día, cierras la caja con un folio. Quedó registrado todo. Mañana empiezas de cero.
 
-## Nota de Uso
+**Reportes útiles:** Ver cuáles son tus productos estrella, qué épocas venden más, dónde enfocarte.
 
-Esta visión guía las decisiones de producto y arquitectura. Ante cualquier duda de alcance o priorización, se debe evaluar si la funcionalidad propuesta acerca o aleja al sistema de esta visión.
+### En desarrollo
+
+El sistema va a evolucionar para:
+- Configurarlo especialmente según tu tipo de tienda (ferretería, abarrotes, ropa, etc.)
+- Registrar diferentes formas de pago (efectivo, tarjeta, transferencia)
+- Generar reportes automáticos más inteligentes (basado en IA)
+- Crear alertas que te avisen de cosas importantes (basado en IA)
+
+## Para quién es
+
+Eres el usuario objetivo si:
+
+- Tienes una tienda pequeña o mediana (abarrotes, ferretería, ropería, farmacia, verdulería, etc.)
+- Trabajas mayormente de forma manual
+- No eres técnico y no quieres tener que serlo
+- Quieres controlar tu negocio sin complicarte la vida
+- Necesitas que tus datos se queden en tu poder
+
+## Lo que NO es
+
+- No es contabilidad compleja. No hace libros de contabilidad ni liquida impuestos automáticamente
+- No reemplaza un contador. Siempre vas a necesitar alguien que te ayude con eso
+- No es un ERP gigante para empresas grandes. Nosotros armamos esto para ti, no para Walmart
+- No necesita de nadie técnico en tu equipo. Tú mismo lo usas
+
+## Principios que nos guían
+
+Todo lo que hacemos responde a estos principios:
+
+**Funcional antes que perfecto:** Preferimos que funcione perfecto sin verse espectacular, a que se vea lindo pero no ande.
+
+**Offline por defecto:** Si se cae internet, tú sigues vendiendo normalmente. Después sincronizamos.
+
+**Adaptable, no genérico:** No es lo mismo una ferretería que un almacén. El sistema aprende a trabajar como tú trabajas.
+
+**Información útil, no datos complejos:** Te mostramos lo que realmente necesitas para tomar decisiones. Sin gráficos complicados ni métricas que no entiendas.
+
+**Crecimiento gradual:** No te metemos 500 features de golpe que no usarás. Vamos agregando lo que realmente necesitas.
+
+## Por qué es diferente
+
+| Aspecto | Otros sistemas | El nuestro |
+|--------|---|---|
+| Conexión a internet | La necesitan siempre | Funciona sin internet |
+| Hardware | Computadora cara y nueva | Funciona en cualquier máquina: vieja, nueva, Raspberry Pi |
+| Capacitación técnica | Necesitas alguien que lo configure | Lo armas tú mismo |
+| Complejidad | Muchas opciones que no usas | Solo lo que necesitas |
+| Tus datos | En servidores lejanos | En tu computadora, bajo tu control |
+| Precio | Generalmente caro | Accesible para pequeños comercios |
+
+
+## Una última cosa
+
+Este proyecto existe porque creemos que los comerciantes pequeños merecen las mismas herramientas que los grandes, pero diseñadas para ustedes.
+
+No estamos aquí para vender un software complicado. Estamos aquí para hacer que tu trabajo diario sea más fácil, más seguro y te dé información real para que tomes mejores decisiones sobre tu negocio.
