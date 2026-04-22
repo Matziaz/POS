@@ -35,11 +35,11 @@
 Los botones de editar y eliminar en la pantalla de inventario **sí funcionan**, pero **no pasan por `ProductService`**.
 
 `ProductService` solo tiene estos métodos:
-- `createProduct()` ✅ (ya corregido, ahora sí lo usamos)
-- `listProducts()` ✅
-- `getBySku()` ✅
-- `setStockBySku()` ✅
-- `adjustStockBySku()` ✅
+- `createProduct()`  (ya corregido, ahora sí lo usamos)
+- `listProducts()` 
+- `getBySku()` 
+- `setStockBySku()` 
+- `adjustStockBySku()` 
 
 **No tiene:** `updateProduct()` ni `deleteProduct()`.
 
@@ -79,3 +79,4 @@ async deleteProduct(id: string): Promise<void>
 ```
 
 Cuando existan, se cambian las 2 acciones en `productStore.ts` para usar el servicio en lugar del repo.
+

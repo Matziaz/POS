@@ -1,74 +1,79 @@
-# Documentacion Para Desarrolladores
+# Documentacion para Desarrolladores
 
-Esta carpeta contiene todo lo que necesitas para empezar a trabajar en el proyecto.
+Esta carpeta contiene la documentacion necesaria para trabajar en el proyecto POS.
 
-## Documentos Disponibles
+## Guias de Desarrollo
 
-1. **[GLOSSARY.md](./guides/GLOSSARY.md)** (15 min) — Si es tu primer proyecto web
-   - Que es un framework, Node.js, npm, Git
-   - Conceptos tecnicos explicados en lenguaje simple
-   - Mensajes de error comunes y que significan
+Documentacion tecnica y convenciones del proyecto (en carpeta `/guides`):
 
-2. **[QUICKSTART.md](./guides/QUICKSTART.md)** (90 min) — Setup y arquitectura
-   - Setup paso a paso
-   - Como entender la arquitectura del proyecto
-   - Primeras tareas recomendadas
-   - Troubleshooting
+- **[GLOSSARY.md](./guides/GLOSSARY.md)** (15 min) — Conceptos basicos
+  - Terminos web, Node.js, npm, Git explicados
+  - Mensajes de error comunes
 
-3. **[DEVELOPMENT.md](./guides/DEVELOPMENT.md)** (30 min) — Consulta permanente
-   - Convenciones de codigo
-   - Estructura detallada del proyecto
-   - Comandos utiles
-   - Problemas comunes y como resolverlos
+- **[QUICKSTART.md](./guides/QUICKSTART.md)** (90 min) — Setup inicial
+  - Instalacion y configuracion paso a paso
+  - Arquitectura general del proyecto
+  - Troubleshooting
 
-4. **[THEMING_GUIDE.md](./guides/THEMING_GUIDE.md)** (15 min) — Como construir componentes compatibles con claro y oscuro
-   - Uso correcto de variables CSS y clases semanticas
-   - Patrones para nuevos componentes
-   - Checklist rapido antes de merge
+- **[DEVELOPMENT.md](./guides/DEVELOPMENT.md)** (30 min) — Referencia constante
+  - Convenciones de codigo
+  - Estructura del proyecto
+  - Comandos utiles
 
-5. **[README_SOFT_DELETE_PRODUCTOS.md](./README_SOFT_DELETE_PRODUCTOS.md)** — Borrado logico y restauracion de productos
-   - Cambio de delete fisico a soft delete
-   - Restauracion con stock manual desde una pagina dedicada
-   - Ajustes necesarios en Prisma, IPC, repositorios y store/hook UI
+- **[THEMING_GUIDE.md](./guides/THEMING_GUIDE.md)** (15 min) — Componentes con tema
+  - Usar variables CSS correctamente
+  - Compatibilidad light/dark mode
+  - Checklist antes de merge
 
-6. **[README_PAGINACION_VENTAS.md](./README_PAGINACION_VENTAS.md)** — Paginacion del historial de ventas
-   - Carga paginada de ventas desde repositorio e IPC
-   - Estado de pagina y total en store/hook de ventas
-   - Navegacion Anterior/Siguiente e indicadores en UI
+- **[PRISMA_GUIDE.md](./guides/PRISMA_GUIDE.md)** — Base de datos con Prisma
+  - Modelos y relaciones
+  - Migraciones
 
-7. **[README_FILTROS_VENTAS.md](./README_FILTROS_VENTAS.md)** — Filtros por fecha y hora en historial de ventas
-   - Filtros desde/hasta conectados a paginacion sin romper el total
-   - Persistencia de filtros aplicados en store y navegacion por pagina
-   - Validaciones de rango, normalizacion de fechas y proteccion contra respuestas viejas
+- **[RUN_CURRENT_STATE_README.md](./guides/RUN_CURRENT_STATE_README.md)** — Como ejecutar el proyecto
+  - Comandos para desarrollo
+  - Configuracion de base de datos
 
-8. **[README_PAGINACION_PRODUCTOS.md](./README_PAGINACION_PRODUCTOS.md)** — Paginacion de productos en inventario
-   - Carga paginada de productos activos desde repositorio e IPC
-   - Estado de pagina, total y ordenamiento en store/hook de productos
-   - Navegacion Anterior/Siguiente con metadatos de rango en UI
+## Features Documentadas
 
-9. **[README_FILTROS_PRODUCTOS.md](./README_FILTROS_PRODUCTOS.md)** — Estado de filtros/ordenamiento de productos
-   - Documenta el estado actual: ordenamiento por columnas
-   - Aclara filtros aun no implementados en Inventario
-   - Incluye propuesta tecnica para evolucionar a filtros reales
+Documentacion de features completadas y cambios tecnicos (en carpeta `/features`):
+
+### Gestion de Datos
+- **SOFT_DELETE_PRODUCTOS.md** — Borrado logico de productos
+- **CONFIGURACION_INICIAL_DB_SCHEMA.md** — Setup inicial y schema
+
+### Terminal de Venta
+- **APERTURA_CAJA_TERMINAL_VENTAS.md** — Apertura de caja en terminal
+- **PAGINACION_VENTAS.md** — Paginacion del historial de ventas
+- **FILTROS_VENTAS.md** — Filtros por fecha y hora en historial
+
+### Inventario
+- **CONTACTOS_INVENTARIO.md** — Gestion de contactos e inventario
+- **PAGINACION_PRODUCTOS.md** — Paginacion de productos en inventario
+- **FILTROS_PRODUCTOS.md** — Estado de filtros/ordenamiento de productos
+- **INVENTORY_DEMO_IMPROVEMENTS.md** — Mejoras en UI de inventario
+
+## Documentacion de Sprints
+
+- **[sprint 1/](./sprint%201/)** — Primera iteracion (cerrada)
+- **[sprint 2/](./sprint%202/)** — Segunda iteracion (cerrada)
+  - CHANGELOG.md — Cambios realizados
+  - EXECUTIVE_SUMMARY.md — Resumen ejecutivo
+- **[sprint 3/](./sprint%203/)** — Tercera iteracion (en progreso)
 
 ## Por Donde Empezar
 
-**Paso 1 — Solo si nunca trabajaste con desarrollo web:**
-Lee [GLOSSARY.md](./guides/GLOSSARY.md) antes de cualquier otra cosa (15 min).
+Si es tu primer proyecto web:
+1. Lee [GLOSSARY.md](./guides/GLOSSARY.md) (15 min)
+2. Luego [QUICKSTART.md](./guides/QUICKSTART.md) (90 min)
 
-**Paso 2 — Todos, el primer dia:**
-Lee [QUICKSTART.md](./guides/QUICKSTART.md). Cubre el setup completo, la arquitectura y el troubleshooting (90 min).
-
-**Paso 3 — Durante el proyecto:**
-Consulta [DEVELOPMENT.md](./guides/DEVELOPMENT.md) cuando necesites recordar convenciones o comandos.
-
-**Paso 4 — Cuando agregues componentes nuevos:**
-Lee [THEMING_GUIDE.md](./guides/THEMING_GUIDE.md) antes de tocar estilos. Te dice como usar el sistema de tema sin romper compatibilidad con modo oscuro.
+Si ya conoces desarrollo web:
+1. Comienza con [QUICKSTART.md](./guides/QUICKSTART.md)
+2. Consulta [DEVELOPMENT.md](./guides/DEVELOPMENT.md) segun sea necesario
 
 ## Referencias Rapidas
 
-| Si necesitas...                 | Ve a                                                                     |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| Entender que construimos        | [../docs/vision.md](../docs/vision.md)                                   |
-| Saber por que estas tecnologias | [../docs/decisiones-arquitectura.md](../docs/decisiones-arquitectura.md) |
-| Ver el plan de desarrollo       | [../docs/roadmap.md](../docs/roadmap.md)                                 |
+| Necesito...                     | Ver                                                                      |
+| ------------------------------- | ---------- |
+| Vision del proyecto             | [../docs/vision.md](../docs/vision.md)                                   |
+| Decisiones arquitectonicas      | [../docs/decisiones-arquitectura.md](../docs/decisiones-arquitectura.md) |
+| Plan de desarrollo              | [../docs/roadmap.md](../docs/roadmap.md)                                 |

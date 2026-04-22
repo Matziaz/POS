@@ -14,15 +14,15 @@ Se han implementado mejoras significativas en la funcionalidad de inventario par
 La tabla mostraba IDs técnicos (typeId, providerId) confusos para usuarios de negocio.
 
 **Soluciones Implementadas:**
-- ✅ **Labels legibles:** Convierte IDs a nombres via props `typeNameById` y `providerNameById`
-- ✅ **Responsive design:** Oculta columnas técnicas en pantallas pequeñas
+-  **Labels legibles:** Convierte IDs a nombres via props `typeNameById` y `providerNameById`
+-  **Responsive design:** Oculta columnas técnicas en pantallas pequeñas
   - SKU se oculta en móvil
   - Fecha se oculta en pantallas < xl
-- ✅ **Manejo inteligente de imágenes:** 
+-  **Manejo inteligente de imágenes:** 
   - Carga lazy de imágenes de productos
   - Fallback automático a ícono por defecto si una imagen falla
-- ✅ **Empty state funcional:** Cuando no hay productos, muestra botón "Crear primer producto" en lugar de tabla vacía
-- ✅ **Sin flicker visual:** El indicador de carga solo aparece en carga inicial, no durante mutaciones
+-  **Empty state funcional:** Cuando no hay productos, muestra botón "Crear primer producto" en lugar de tabla vacía
+-  **Sin flicker visual:** El indicador de carga solo aparece en carga inicial, no durante mutaciones
 
 **Resultado Visual:**
 
@@ -47,14 +47,14 @@ SKU-002     | Doritos 100g     | Snack      | Frito Lay     | 120
 El formulario pedía inputs de texto libre para type y provider, generando errores y confusión.
 
 **Soluciones Implementadas:**
-- ✅ **Selects guiados:** 
+-  **Selects guiados:** 
   - `typeId` ahora es dropdown con opciones válidas (no free text)
   - `providerId` ahora es dropdown con opciones válidas
-- ✅ **Preview de imagen:** Muestra thumbnail de imagen del producto mientras se edita
-- ✅ **Validación fuerte:** 
+-  **Preview de imagen:** Muestra thumbnail de imagen del producto mientras se edita
+-  **Validación fuerte:** 
   - Botón "Guardar" está deshabilitado hasta que los 6 campos estén completos
   - Previene envíos inválidos antes de llegar al servidor
-- ✅ **UX predecible:** El usuario ve exactamente qué opciones son válidas
+-  **UX predecible:** El usuario ve exactamente qué opciones son válidas
 
 **Flujo Mejorado:**
 ```
@@ -86,20 +86,20 @@ El formulario pedía inputs de texto libre para type y provider, generando error
 - Catálogo de proveedores era incompleto
 
 **Soluciones Implementadas:**
-- ✅ **Estados separados:**
+-  **Estados separados:**
   - `isLoading` = carga inicial de datos
   - `isMutating` = operaciones de edición/creación/eliminación
   - Resultado: Tabla permanece visible mientras se guarda un producto
   
-- ✅ **Catálogo de tipos desde BD:**
+-  **Catálogo de tipos desde BD:**
   - Carga en `useEffect` al montar componente
   - Garantiza que todos los tipos disponibles están en el form select
   
-- ✅ **Manejo de errores mejorado:**
+-  **Manejo de errores mejorado:**
   - Si algo falla, muestra botón "Reintentar" 
   - Usuario puede reintentar sin cerrar la página
   
-- ✅ **Comunicación Form ↔ Tabla:**
+-  **Comunicación Form ↔ Tabla:**
   - Botón "Crear" en tabla abre el formulario
   - Formulario exitoso actualiza tabla automáticamente
   - Callbacks bien conectados mediante props
@@ -136,15 +136,15 @@ ProductForm:
 Integra datos de proveedores y personal desde la base de datos de forma reactiva.
 
 **Características:**
-- ✅ **Fetch automático:** Llama a IPC handlers para obtener listas de proveedores y usuarios
-- ✅ **Enriquecimiento de datos:** 
+-  **Fetch automático:** Llama a IPC handlers para obtener listas de proveedores y usuarios
+-  **Enriquecimiento de datos:** 
   - Agrega avatares calculados basados en iniciales
   - Añade subtítulos (rol, puesto)
   - Incluye métricas (órdenes/mes, empleado_id)
-- ✅ **Fallback resiliente:** 
+-  **Fallback resiliente:** 
   - Si los endpoints IPC no están disponibles, usa datos mock
   - Código no crashea durante desarrollo temprano
-- ✅ **Tipos discriminados:** 
+-  **Tipos discriminados:** 
   - `ProviderContactView` para proveedores (con métricas de negocio)
   - `StaffContactView` para personal (con datos de empleado)
   - Rendering correcto según tipo
@@ -161,15 +161,15 @@ useContactStore.subscribe(state => {...}) // Observar cambios
 ### 5. ContactsDirectory.tsx - Directorio de Contactos (Nuevo)
 
 **Funcionalidades:**
-- ✅ **Grid de comercial / tarjetas personales:** Muestra contactos en layout responsivo
-- ✅ **Búsqueda en vivo:** Filtra por nombre mientras escribes
-- ✅ **Tabs de categorización:** All / Proveedores / Personal
-- ✅ **Información visual:**
+-  **Grid de comercial / tarjetas personales:** Muestra contactos en layout responsivo
+-  **Búsqueda en vivo:** Filtra por nombre mientras escribes
+-  **Tabs de categorización:** All / Proveedores / Personal
+-  **Información visual:**
   - Avatar con iníciales
   - Nombre y rol
   - Contacto (teléfono/email)
   - Acciones rápidas (llamar, mensajear)
-- ✅ **Discriminated rendering:** Cada tipo de contacto muestra info diferente (ProviderCard vs StaffCard)
+-  **Discriminated rendering:** Cada tipo de contacto muestra info diferente (ProviderCard vs StaffCard)
 
 ---
 
@@ -180,7 +180,7 @@ useContactStore.subscribe(state => {...}) // Observar cambios
 En la implementación inicial, el código construía el catálogo de proveedores **solo desde los productos existentes**:
 
 ```typescript
-// ⚠️ INCOMPLETO: Solo muestra proveedores que ya tienen productos
+//  INCOMPLETO: Solo muestra proveedores que ya tienen productos
 const providers = useMemo<ProviderOption[]>(() => {
   const ids = new Set<string>([DEFAULT_PROVIDER_ID])
   products.forEach((product) => ids.add(product.providerId)) // ← Aquí filtra
@@ -195,22 +195,22 @@ const providers = useMemo<ProviderOption[]>(() => {
 
 | Escenario | Cantidad BD | Cantidad Visible | Impacto |
 |-----------|------------|------------------|---------|
-| Base de datos limpia | 15 proveedores | 0 proveedores | ❌ No se puede crear primer producto |
-| Pocos productos | 20 proveedores | 2-3 proveedores | ❌ Usuarios frustrados |
-| Empresa real | 50+ proveedores | ~10 | ❌ Demo se ve incompleta |
+| Base de datos limpia | 15 proveedores | 0 proveedores |  No se puede crear primer producto |
+| Pocos productos | 20 proveedores | 2-3 proveedores |  Usuarios frustrados |
+| Empresa real | 50+ proveedores | ~10 |  Demo se ve incompleta |
 
 **Problemas concretos:**
 - 📊 Si tienes 20 proveedores en BD pero solo 2 tienen productos → solo 2 aparecen en el select
-- ❌ Usuario no puede crear producto con proveedor nuevo de la BD
-- ❌ Demo se ve incompleta: "¿Dónde están los otros proveedores?"
-- ❌ Fuerza al usuario a editar después (workflow pobre)
+-  Usuario no puede crear producto con proveedor nuevo de la BD
+-  Demo se ve incompleta: "¿Dónde están los otros proveedores?"
+-  Fuerza al usuario a editar después (workflow pobre)
 
 ### Solución Propuesta
 
 Cargar **todos** los proveedores directamente de BD via IPC:
 
 ```typescript
-// ✅ COMPLETO: Todos los proveedores de la BD
+//  COMPLETO: Todos los proveedores de la BD
 useEffect(() => {
   window.electronAPI?.providerList?.()
     .then(rows => setProviders(rows)) // Directo de DB, sin filtro
@@ -218,10 +218,10 @@ useEffect(() => {
 ```
 
 **Ventajas:**
-- ✅ 100% de proveedores disponibles en el select
-- ✅ Usuario puede elegir cualquier proveedor existente
-- ✅ Demo se ve completa y profesional
-- ✅ Scope: ~5 líneas de código
+-  100% de proveedores disponibles en el select
+-  Usuario puede elegir cualquier proveedor existente
+-  Demo se ve completa y profesional
+-  Scope: ~5 líneas de código
 
 ---
 
@@ -229,11 +229,11 @@ useEffect(() => {
 
 | Componente | Estado | Detalles |
 |-----------|--------|----------|
-| **ProductTable** | ✅ Completo | Responsive, labels legibles, imágenes con fallback, empty state |
-| **ProductForm** | ✅ Completo | Selects guiados, preview imagen, validación fuerte |
-| **InventoryPage** | ✅ Completo | Estados separados isLoading/isMutating; tipos desde BD; **proveedores aún workaround** |
-| **ContactStore** | ✅ Completo | Fetch de BD con fallback a mock; tipos discriminados |
-| **ContactsDirectory** | ✅ Completo | Búsqueda, tabs, cards con info enriquecida |
+| **ProductTable** |  Completo | Responsive, labels legibles, imágenes con fallback, empty state |
+| **ProductForm** |  Completo | Selects guiados, preview imagen, validación fuerte |
+| **InventoryPage** |  Completo | Estados separados isLoading/isMutating; tipos desde BD; **proveedores aún workaround** |
+| **ContactStore** |  Completo | Fetch de BD con fallback a mock; tipos discriminados |
+| **ContactsDirectory** |  Completo | Búsqueda, tabs, cards con info enriquecida |
 | **IPC Bridge** | 🟡 Incompleto | Handlers provider:list/user:list escritos en ipcHandlers.ts pero **no expuestos en preload/d.ts** |
 
 ---
@@ -241,11 +241,11 @@ useEffect(() => {
 ## Validaciones Realizadas
 
 ```bash
-✅ TypeScript type-check: PASS (archivos de inventario y contactos)
-✅ No breaking changes: Props antiguas mantienen compatibilidad
-✅ Accesibilidad: Inputs/selects siguen estándares HTML5
-✅ Performance: useMemo en catálogos, lazy loading imágenes
-✅ Responsiveness: Tested en móvil (sm), tablet (md), desktop (lg, xl)
+ TypeScript type-check: PASS (archivos de inventario y contactos)
+ No breaking changes: Props antiguas mantienen compatibilidad
+ Accesibilidad: Inputs/selects siguen estándares HTML5
+ Performance: useMemo en catálogos, lazy loading imágenes
+ Responsiveness: Tested en móvil (sm), tablet (md), desktop (lg, xl)
 ```
 
 ---
@@ -256,40 +256,40 @@ useEffect(() => {
 
 **Antes (Sin Mejoras):**
 ```
-❌ Usuario ve tabla vacía confusa
-❌ Intenta hacer clic, no hay CTA clara
-❌ Abre form manualmente
-❌ Form pide "ingresa typeId" → ¿Qué es eso?
-❌ Demo se ve confusa
+ Usuario ve tabla vacía confusa
+ Intenta hacer clic, no hay CTA clara
+ Abre form manualmente
+ Form pide "ingresa typeId" → ¿Qué es eso?
+ Demo se ve confusa
 ```
 
 **Después (Con Mejoras):**
 ```
-✅ Empty state muestra "Crear primer producto"
-✅ Usuario hace clic → abre form automáticamente
-✅ Form muestra dropdowns: "Tipo: [Bebida, Snack]"
-✅ Usuario selecciona, completa campos, guarda
-✅ Tabla actualiza automáticamente, sin flicker
-✅ Demo fluida y profesional
+ Empty state muestra "Crear primer producto"
+ Usuario hace clic → abre form automáticamente
+ Form muestra dropdowns: "Tipo: [Bebida, Snack]"
+ Usuario selecciona, completa campos, guarda
+ Tabla actualiza automáticamente, sin flicker
+ Demo fluida y profesional
 ```
 
 ### Escenario 2: Editar Producto Existente
 
 **Antes:**
 ```
-❌ typeId: 3 → No sé qué es
-❌ providerId: prov_xyz123 → Confuso
-❌ Durante edición, tabla desaparece → Glitch visual
-❌ Sensación de que algo está roto
+ typeId: 3 → No sé qué es
+ providerId: prov_xyz123 → Confuso
+ Durante edición, tabla desaparece → Glitch visual
+ Sensación de que algo está roto
 ```
 
 **Después:**
 ```
-✅ Tipo: Bebida → Claro
-✅ Proveedor: Coca Company → Profesional
-✅ Durante edición, tabla sigue visible → Fluidez
-✅ Cambios se ven en tiempo real
-✅ Experiencia controlada
+ Tipo: Bebida → Claro
+ Proveedor: Coca Company → Profesional
+ Durante edición, tabla sigue visible → Fluidez
+ Cambios se ven en tiempo real
+ Experiencia controlada
 ```
 
 ---
@@ -307,8 +307,8 @@ useEffect(() => {
 
 ### Handlers (Parcialmente)
 - [src/electron/ipcHandlers.ts](../src/electron/ipcHandlers.ts) - Handlers escritos, no expuestos
-- [src/electron/preload.ts](../src/electron/preload.ts) - ⚠️ Requiere actualización
-- [src/electron.d.ts](../src/electron.d.ts) - ⚠️ Requiere actualización
+- [src/electron/preload.ts](../src/electron/preload.ts) -  Requiere actualización
+- [src/electron.d.ts](../src/electron.d.ts) -  Requiere actualización
 
 ---
 
@@ -362,11 +362,11 @@ useEffect(() => {
 
 | Métrica | Antes | Después | Cambio |
 |---------|-------|---------|--------|
-| **IDs crudos visibles** | 2 por fila | 0 por fila | -100% ✅ |
-| **Errores de entrada** | Alto (free text) | Bajo (select) | -80% ✅ |
-| **Visual glitch durante edición** | Sí | No | -100% ✅ |
+| **IDs crudos visibles** | 2 por fila | 0 por fila | -100%  |
+| **Errores de entrada** | Alto (free text) | Bajo (select) | -80%  |
+| **Visual glitch durante edición** | Sí | No | -100%  |
 | **Opciones de proveedor** | 2-5 | ~20 | +300% 🔄 |
-| **Clics hasta crear producto** | 5+ | 2 | -60% ✅ |
+| **Clics hasta crear producto** | 5+ | 2 | -60%  |
 
 ---
 
@@ -405,3 +405,4 @@ useEffect(() => {
 - [Configuración de Prisma](PRISMA_GUIDE.md)
 - [Guía de Temas](THEMING_GUIDE.md)
 - [Roadmap de Proyecto](../docs/roadmap.md)
+

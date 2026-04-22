@@ -170,12 +170,13 @@ Usa esto solo en entornos de desarrollo o cuando estés seguro de las consecuenc
 ## Siguiente paso
 
 Compilar, probar la integración de extremo a extremo, y cerrar las HU de Sprint 1.5:
-- **HU1**: Productos se persisten en SQLite ✅
-- **HU2**: Ventas se persisten en SQLite ✅
-- **HU3**: Datos sobreviven al reinicio de la app ✅
+- **HU1**: Productos se persisten en SQLite 
+- **HU2**: Ventas se persisten en SQLite 
+- **HU3**: Datos sobreviven al reinicio de la app 
 
 ---
 
 ## Metodología
 
 Todo el código de esta rama fue generado con asistencia de **GitHub Copilot (Claude)** bajo la dirección y supervisión de Diego. La IA propuso la arquitectura IPC bridge, generó los archivos, y diagnosticó los errores de integración (ESM/CJS, env vars, rutas). Diego validó cada paso, probó la app, y reportó los errores que la IA resolvió iterativamente.
+
