@@ -8,11 +8,14 @@ import {
   AdminSectionTabs,
   AdminSetupSection,
   AdminRestoreSection,
+  AdminPaymentMethodsSection,
+  AdminConfigurationSection,
   type AdminSection,
   type AdminDeletedProductType,
   type AdminProductType,
   type AdminRole,
   type AdminUser,
+  type AdminPaymentMethod,
 } from "@interface/components/admin"
 
 interface AdminPageProps {
@@ -45,6 +48,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
   const [isLoadingDeletedProductTypes, setIsLoadingDeletedProductTypes] = useState(false)
   const [roles, setRoles] = useState<AdminRole[]>([])
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<AdminPaymentMethod[]>([])
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotification({ type, message })
@@ -56,18 +60,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
       setProductTypes([])
       setRoles([])
       setUsers([])
+      setPaymentMethods([])
       return
     }
 
-    const [types, roleRows, userRows] = await Promise.all([
+    const [types, roleRows, userRows, methodRows] = await Promise.all([
       electronAPI.productTypeList(),
       electronAPI.roleList(),
       electronAPI.userList(),
+      electronAPI.paymentMethodList(),
     ])
 
     setProductTypes(types)
     setRoles(roleRows)
     setUsers(userRows)
+    setPaymentMethods(methodRows)
   }
 
   const runSetupAction = async (callback: () => Promise<void>, successMessage: string) => {
@@ -115,10 +122,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
 
     const loadSetupData = async () => {
       try {
-        const [types, roleRows, userRows] = await Promise.all([
+        const [types, roleRows, userRows, methodRows] = await Promise.all([
           electronAPI?.productTypeList() ?? Promise.resolve([]),
           electronAPI?.roleList() ?? Promise.resolve([]),
           electronAPI?.userList() ?? Promise.resolve([]),
+          electronAPI?.paymentMethodList() ?? Promise.resolve([]),
         ])
 
         if (!active) return
@@ -126,11 +134,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
         setProductTypes(types)
         setRoles(roleRows)
         setUsers(userRows)
+        setPaymentMethods(methodRows)
       } catch {
         if (!active) return
         setProductTypes([])
         setRoles([])
         setUsers([])
+        setPaymentMethods([])
       }
     }
 
@@ -299,6 +309,39 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
         />
       )}
 
+      {activeSection === "payment" && (
+        <AdminPaymentMethodsSection
+          paymentMethods={paymentMethods}
+          onCreatePaymentMethod={async (data) => {
+            await runSetupAction(
+              async () => {
+                if (!electronAPI) throw new Error("Electron API no disponible")
+                await electronAPI.paymentMethodCreate(data)
+              },
+              "Método de pago creado correctamente"
+            )
+          }}
+          onUpdatePaymentMethod={async (id, data) => {
+            await runSetupAction(
+              async () => {
+                if (!electronAPI) throw new Error("Electron API no disponible")
+                await electronAPI.paymentMethodUpdate({ id, ...data })
+              },
+              "Método de pago actualizado correctamente"
+            )
+          }}
+          onTogglePaymentMethod={async (id) => {
+            await runSetupAction(
+              async () => {
+                if (!electronAPI) throw new Error("Electron API no disponible")
+                await electronAPI.paymentMethodToggleActive(id)
+              },
+              "Estado del método de pago actualizado"
+            )
+          }}
+        />
+      )}
+
       {activeSection === "restore" && (
         <AdminRestoreSection
           restoreTarget={restoreTarget}
@@ -321,6 +364,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
           deletedProductTypes={filteredDeletedProductTypes}
           onRestoreClick={handleOpenRestore}
           onRestoreProductTypeClick={handleRestoreProductType}
+        />
+      )}
+
+      {activeSection === "config" && (
+        <AdminConfigurationSection
+          onSave={async (retailContext) => {
+            await runSetupAction(
+              async () => {
+                if (!electronAPI) throw new Error("Electron API no disponible")
+                await electronAPI.configurationSaveInitial({ retailContext })
+              },
+              "Configuración actualizada correctamente"
+            )
+          }}
         />
       )}
 
