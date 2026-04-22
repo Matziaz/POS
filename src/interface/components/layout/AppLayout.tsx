@@ -113,7 +113,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Side nav */}
         <aside
           className={cn(
-            "fixed bottom-0 left-0 top-14 z-40 border-r bg-card transition-all duration-200 md:static md:top-auto md:h-[calc(100vh-3.5rem)] md:translate-x-0",
+            "fixed bottom-0 left-0 top-14 z-40 border-r bg-card transition-all duration-200 md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] md:self-start md:translate-x-0",
             isSidebarOpen ? "translate-x-0 w-64 md:w-64" : "-translate-x-full w-64 md:translate-x-0 md:w-20"
           )}
         >
