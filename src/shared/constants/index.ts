@@ -4,7 +4,7 @@
  * Valores que no cambian, sin hard-coding.
  */
 
-export const APP_NAME = 'POS Adaptable'
+export const APP_NAME = 'Cenzontle POS'
 export const APP_VERSION = '0.1.0'
 
 // Errores

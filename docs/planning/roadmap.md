@@ -1,4 +1,4 @@
-# Roadmap de Desarrollo - POS Adaptable
+# Roadmap de Desarrollo - Cenzontle POS
 
 ## Visión Operativa del Roadmap
 

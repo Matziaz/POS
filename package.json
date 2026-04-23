@@ -1,5 +1,5 @@
 {
-  "name": "pos-adaptable",
+  "name": "cenzontle-pos",
   "version": "0.1.0",
   "description": "Sistema POS offline-first para micro-comercios",
   "main": "dist/electron/main.js",
