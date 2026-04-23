@@ -720,20 +720,54 @@ function registerSalePaymentHandlers() {
   });
 }
 
+function toUserMessage(error: unknown): string {
+  const fallback = "Ocurrio un error inesperado. Intenta nuevamente.";
+
+  if (!(error instanceof Error)) return fallback;
+
+  const err = error as Error & { code?: string; meta?: { target?: string[] } };
+
+  if (err.code === "P2002" && err.meta?.target?.includes("folio")) {
+    return "No se pudo generar el corte porque el folio se repitio. Intenta de nuevo.";
+  }
+
+  if (err.message.includes("No hay una caja abierta para cerrar")) {
+    return "No hay una caja abierta para cerrar. El corte es el paso final del dia y requiere una caja abierta.";
+  }
+
+  if (err.message.includes("La fecha de cierre debe ser posterior a la apertura")) {
+    return "La fecha/hora de cierre debe ser posterior a la apertura de caja.";
+  }
+
+  if (err.message.includes("No hay una caja abierta.")) {
+    return "No hay caja abierta para vender. Debes abrir caja antes de registrar ventas.";
+  }
+
+  if (err.message.includes("no esta abierta")) {
+    return "La caja seleccionada no esta abierta. Abre una caja valida para continuar.";
+  }
+
+  return err.message || fallback;
+}
+
 function registerCashClosureHandlers() {
   ipcMain.handle("cashClosure:close", async (_event, data: CashClosureCloseJSON) => {
-    const result = await cashClosureService.closeDaily({
-      closedAt: data.closedAt,
-      businessDate: data.businessDate,
-      userId: data.userId,
-      notes: data.notes,
-      isFinal: data.isFinal,
-    });
+    try {
+      const result = await cashClosureService.closeDaily({
+        closedAt: data.closedAt,
+        businessDate: data.businessDate,
+        userId: data.userId,
+        notes: data.notes,
+        isFinal: data.isFinal,
+      });
 
-    return {
-      closure: result.closure.toJSON() as CashClosureJSON,
-      breakdown: result.breakdown.map((item) => item.toJSON()) as CashClosurePaymentBreakdownJSON[],
-    };
+      return {
+        closure: result.closure.toJSON() as CashClosureJSON,
+        breakdown: result.breakdown.map((item) => item.toJSON()) as CashClosurePaymentBreakdownJSON[],
+      };
+    } catch (error) {
+      throw new Error(toUserMessage(error));
+    }
   });
 
   ipcMain.handle("cashClosure:listByDateRange", async (_event, fromISO: string, toISO: string) => {
@@ -755,6 +789,11 @@ export function registerAllIpcHandlers() {
   registerPaymentMethodHandlers();
   registerCashClosureHandlers();
   console.log("[IPC] All database handlers registered");
+}
+
+export async function hasOpenCashRegister(): Promise<boolean> {
+  const opened = await cashRegisterRepository.findOpen();
+  return !!opened;
 }
 
 // ─── Cleanup ──────────────────────────────────────────────────────────────────

@@ -30,7 +30,9 @@ function toISOOrNow(value?: string): string {
 
 function buildFolio(businessDate: string): string {
   const compactDate = businessDate.replace(/-/g, "");
-  return `CC-${compactDate}-${newId().slice(0, 8).toUpperCase()}`;
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `CC-${compactDate}-${timestamp}${random}`;
 }
 
 export class CashClosureService {

@@ -191,6 +191,32 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[]
 }
 
+interface CashClosurePrecloseAlertJSON {
+  businessDate: string
+  triggeredAt: string
+  message: string
+}
+
+interface PaymentMethodJSON {
+  id: string
+  method: string
+  isCash: number
+  isActive: number
+  displayOrder: number | null
+}
+
+interface PaymentMethodCreateJSON {
+  method: string
+  isCash: number
+  displayOrder?: number | null
+}
+
+interface PaymentMethodUpdateJSON {
+  id: string
+  method: string
+  displayOrder?: number | null
+}
+
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
@@ -231,10 +257,15 @@ interface ElectronAPI {
   
   // Payment Methods
   paymentMethodListActive(): Promise<any[]>
+  paymentMethodList(): Promise<PaymentMethodJSON[]>
+  paymentMethodCreate(data: PaymentMethodCreateJSON): Promise<PaymentMethodJSON>
+  paymentMethodUpdate(data: PaymentMethodUpdateJSON): Promise<void>
+  paymentMethodToggleActive(id: string): Promise<PaymentMethodJSON>
   
   // Cash Closure
   cashClosureClose(data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON>
   cashClosureListByDateRange(fromISO: string, toISO: string): Promise<CashClosureJSON[]>
+  onCashClosurePrecloseAlert(listener: (payload: CashClosurePrecloseAlertJSON) => void): () => void
 
   // Sale Payments
   salePaymentSave(data: SalePaymentJSON): Promise<void>

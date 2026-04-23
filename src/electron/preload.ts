@@ -197,6 +197,12 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[];
 }
 
+interface CashClosurePrecloseAlertJSON {
+  businessDate: string;
+  triggeredAt: string;
+  message: string;
+}
+
 interface PaymentMethodJSON {
   id: string;
   method: string;
@@ -321,6 +327,17 @@ const electronAPI = {
     ipcRenderer.invoke("cashClosure:close", data),
   cashClosureListByDateRange: (fromISO: string, toISO: string): Promise<CashClosureJSON[]> =>
     ipcRenderer.invoke("cashClosure:listByDateRange", fromISO, toISO),
+  onCashClosurePrecloseAlert: (
+    listener: (payload: CashClosurePrecloseAlertJSON) => void
+  ): (() => void) => {
+    const wrappedListener = (_event: Electron.IpcRendererEvent, payload: CashClosurePrecloseAlertJSON) => {
+      listener(payload);
+    };
+    ipcRenderer.on("cashClosure:precloseAlert", wrappedListener);
+    return () => {
+      ipcRenderer.removeListener("cashClosure:precloseAlert", wrappedListener);
+    };
+  },
 
   // Payment Methods
   paymentMethodListActive: (): Promise<PaymentMethodJSON[]> =>

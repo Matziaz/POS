@@ -23,6 +23,12 @@ type CashClosureBreakdownView = {
   totalAmount: number
 }
 
+type CashClosurePrecloseAlertView = {
+  businessDate: string
+  triggeredAt: string
+  message: string
+}
+
 function startOfDayISO(date: Date): string {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString()
 }
@@ -61,6 +67,7 @@ export const CashClosurePage: React.FC = () => {
 
   const [closures, setClosures] = useState<CashClosureView[]>([])
   const [lastBreakdown, setLastBreakdown] = useState<CashClosureBreakdownView[]>([])
+  const [precloseAlert, setPrecloseAlert] = useState<CashClosurePrecloseAlertView | null>(null)
 
   const loadHistory = async () => {
     try {
@@ -88,6 +95,19 @@ export const CashClosurePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    const off = window.electronAPI?.onCashClosurePrecloseAlert?.((payload) => {
+      setPrecloseAlert(payload)
+      if (payload.businessDate) {
+        setBusinessDate(payload.businessDate)
+      }
+    })
+
+    return () => {
+      off?.()
+    }
+  }, [])
+
   const handleCloseCash = async () => {
     try {
       setIsClosing(true)
@@ -106,6 +126,7 @@ export const CashClosurePage: React.FC = () => {
 
       setLastBreakdown(result.breakdown)
       setSuccess(`Corte generado con folio ${result.closure.folio}`)
+      setPrecloseAlert(null)
       setNotes("")
       await loadHistory()
     } catch (err) {
@@ -132,6 +153,21 @@ export const CashClosurePage: React.FC = () => {
 
       <section className="mb-6 rounded-lg border bg-card p-4">
         <h2 className="mb-3 text-lg font-semibold">Generar corte</h2>
+
+        {precloseAlert && (
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="font-medium">Aviso de pre-cierre</p>
+            <p>{precloseAlert.message}</p>
+            <p className="mt-1 text-xs">
+              Fecha de negocio: {precloseAlert.businessDate} | Detectado: {formatDateTime(precloseAlert.triggeredAt)}
+            </p>
+            <div className="mt-3">
+              <Button onClick={handleCloseCash} disabled={isClosing} size="sm">
+                {isClosing ? "Generando corte..." : "Confirmar cierre ahora"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-3 md:grid-cols-3">
           <label className="grid gap-1 text-sm">
