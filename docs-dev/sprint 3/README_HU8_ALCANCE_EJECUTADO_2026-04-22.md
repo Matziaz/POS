@@ -88,9 +88,8 @@ Documentar que se implemento en el ajuste de alcance de HU8, que criterios se cu
 
 1. Configuracion persistente de autocierre desde Admin.
 2. Cierre 100% automatico sin confirmacion humana.
-3. Idempotencia fuerte en BD para cierre final diario.
-4. Auditoria completa de ejecuciones del scheduler.
-5. Observabilidad admin de ultima/proxima ejecucion y reintentos.
+3. Auditoria completa de ejecuciones del scheduler.
+4. Observabilidad admin de ultima/proxima ejecucion y reintentos.
 
 ## 7. Riesgos abiertos y siguiente paso recomendado
 
