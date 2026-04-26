@@ -16,7 +16,7 @@ export interface PreCloseDecision {
 }
 
 const PRE_CLOSE_HOUR = 23;
-const PRE_CLOSE_MINUTE = 01;
+const PRE_CLOSE_MINUTE = 1;
 
 function pad2(value: number): string {
   return value.toString().padStart(2, "0");

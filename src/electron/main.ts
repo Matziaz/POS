@@ -1,11 +1,70 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { registerAllIpcHandlers, disconnectPrisma, hasOpenCashRegister } from "./ipcHandlers";
-import { buildPreCloseAlertPayload, shouldEmitPreCloseAlert } from "./preCloseScheduler";
+import { getCashClosureReminderConfig } from "./cashClosureReminderConfig";
 
-const PRE_CLOSE_TICK_MS = 60_000;
-let preCloseTimer: NodeJS.Timeout | null = null;
-let lastPreCloseAlertBusinessDate: string | null = null;
+const PRE_CLOSE_CHANNEL = "cashClosure:preCloseReminder";
+const PRE_CLOSE_TICK_MS = 10_000;
+
+let preCloseInterval: NodeJS.Timeout | null = null;
+let lastNotifiedBusinessDate: string | null = null;
+
+function getBusinessDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isAtOrAfterWindow(date: Date, time: string): boolean {
+  const [hourPart, minutePart] = time.split(":");
+  const configuredHour = Number(hourPart);
+  const configuredMinute = Number(minutePart);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  return hours > configuredHour || (hours === configuredHour && minutes >= configuredMinute);
+}
+
+async function evaluateAndNotifyPreClose() {
+  const now = new Date();
+  const config = getCashClosureReminderConfig();
+
+  if (!isAtOrAfterWindow(now, config.reminderTime)) {
+    return;
+  }
+
+  const businessDate = getBusinessDate(now);
+  if (lastNotifiedBusinessDate === businessDate) {
+    return;
+  }
+
+  const hasOpenRegister = await hasOpenCashRegister();
+  if (!hasOpenRegister) {
+    return;
+  }
+
+  const windows = BrowserWindow.getAllWindows();
+  for (const window of windows) {
+    window.webContents.send(PRE_CLOSE_CHANNEL, {
+      businessDate,
+      triggeredAt: now.toISOString(),
+      scheduledTime: config.reminderTime,
+    });
+  }
+
+  lastNotifiedBusinessDate = businessDate;
+}
+
+function startPreCloseScheduler() {
+  if (preCloseInterval) {
+    clearInterval(preCloseInterval);
+  }
+
+  void evaluateAndNotifyPreClose();
+  preCloseInterval = setInterval(() => {
+    void evaluateAndNotifyPreClose();
+  }, PRE_CLOSE_TICK_MS);
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -29,46 +88,6 @@ function createWindow() {
   win.loadFile(indexHtml);
 }
 
-async function runPreCloseSchedulerTick() {
-  const now = new Date();
-  const hasOpenRegister = await hasOpenCashRegister();
-  const decision = shouldEmitPreCloseAlert({
-    now,
-    hasOpenRegister,
-    lastAlertBusinessDate: lastPreCloseAlertBusinessDate,
-  });
-
-  if (!decision.emit) return;
-
-  lastPreCloseAlertBusinessDate = decision.businessDate;
-  const payload = buildPreCloseAlertPayload(now, decision.businessDate);
-
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.isDestroyed()) continue;
-    window.webContents.send("cashClosure:precloseAlert", payload);
-  }
-}
-
-function startPreCloseScheduler() {
-  if (preCloseTimer) return;
-
-  void runPreCloseSchedulerTick().catch((error) => {
-    console.error("[Scheduler] preclose tick failed", error);
-  });
-
-  preCloseTimer = setInterval(() => {
-    void runPreCloseSchedulerTick().catch((error) => {
-      console.error("[Scheduler] preclose tick failed", error);
-    });
-  }, PRE_CLOSE_TICK_MS);
-}
-
-function stopPreCloseScheduler() {
-  if (!preCloseTimer) return;
-  clearInterval(preCloseTimer);
-  preCloseTimer = null;
-}
-
 app.whenReady().then(() => {
   registerAllIpcHandlers();
   createWindow();
@@ -80,7 +99,10 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", async () => {
-  stopPreCloseScheduler();
+  if (preCloseInterval) {
+    clearInterval(preCloseInterval);
+    preCloseInterval = null;
+  }
   await disconnectPrisma();
   if (process.platform !== "darwin") app.quit();
 });

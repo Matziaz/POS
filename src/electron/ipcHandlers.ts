@@ -32,6 +32,10 @@ import { PrismaCashClosureRepository } from "../infrastructure/persistence/Prism
 import { PrismaCashClosurePaymentBreakdownRepository } from "../infrastructure/persistence/PrismaCashClosurePaymentBreakdownRepository";
 import { PrismaSalePaymentRepository } from "../infrastructure/persistence/PrismaSalePaymentRepository";
 import { SalePayment } from "../core/entities/SalePayment";
+import {
+  getCashClosureReminderConfig,
+  saveCashClosureReminderConfig,
+} from "./cashClosureReminderConfig";
 
 
 // Ruta absoluta a la base de datos SQLite.
@@ -242,6 +246,61 @@ interface CashClosureCloseJSON {
   userId?: string;
   notes?: string;
   isFinal?: boolean;
+}
+
+interface CashClosureReminderConfigJSON {
+  reminderTime: string;
+  closureTime: string;
+}
+
+interface CashClosurePreCloseReminderJSON {
+  businessDate: string;
+  triggeredAt: string;
+  scheduledTime: string;
+}
+
+function formatLocalBusinessDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isAtOrAfterWindow(date: Date, time: string): boolean {
+  const [hourPart, minutePart] = time.split(":");
+  const configuredHour = Number(hourPart);
+  const configuredMinute = Number(minutePart);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  return hours > configuredHour || (hours === configuredHour && minutes >= configuredMinute);
+}
+
+function buildClosureAuditNote(closedAtISO: string, closureTime: string): string {
+  const closedAt = new Date(closedAtISO);
+  const closedAtDate = formatLocalBusinessDate(closedAt);
+  const closedAtHour = String(closedAt.getHours()).padStart(2, "0");
+  const closedAtMinute = String(closedAt.getMinutes()).padStart(2, "0");
+  const closedAtTime = `${closedAtHour}:${closedAtMinute}`;
+  const [closureHourPart, closureMinutePart] = closureTime.split(":");
+  const closureHour = Number(closureHourPart);
+  const closureMinute = Number(closureMinutePart);
+  const cutOffDate = new Date(
+    closedAt.getFullYear(),
+    closedAt.getMonth(),
+    closedAt.getDate(),
+    closureHour,
+    closureMinute,
+    0,
+    0,
+  );
+  const isLate = closedAt.getTime() >= cutOffDate.getTime();
+
+  if (isLate) {
+    return `AUDIT: CORTE_ATRASADO | hora_programada=${closureTime} | hora_real=${closedAtTime} | fecha_real=${closedAtDate}`;
+  }
+
+  return `AUDIT: CORTE_EN_TIEMPO | hora_programada=${closureTime} | hora_real=${closedAtTime} | fecha_real=${closedAtDate}`;
 }
 
 interface PaymentMethodJSON {
@@ -619,6 +678,34 @@ function registerConfigurationHandlers() {
     });
     return saved.toJSON();
   });
+
+  ipcMain.handle("cashClosure:reminderConfigGet", async (): Promise<CashClosureReminderConfigJSON> => {
+    return getCashClosureReminderConfig();
+  });
+
+  ipcMain.handle("cashClosure:reminderConfigSave", async (_event, data: CashClosureReminderConfigJSON): Promise<CashClosureReminderConfigJSON> => {
+    return saveCashClosureReminderConfig({
+      reminderTime: data.reminderTime,
+      closureTime: data.closureTime,
+    });
+  });
+
+  ipcMain.handle("cashClosure:getPendingReminder", async (): Promise<CashClosurePreCloseReminderJSON | null> => {
+    const opened = await cashRegisterRepository.findOpen();
+    if (!opened) return null;
+
+    const now = new Date();
+    const config = getCashClosureReminderConfig();
+    if (!isAtOrAfterWindow(now, config.reminderTime)) {
+      return null;
+    }
+
+    return {
+      businessDate: formatLocalBusinessDate(now),
+      triggeredAt: now.toISOString(),
+      scheduledTime: config.reminderTime,
+    };
+  });
 }
 
 function registerCashRegisterHandlers() {
@@ -753,11 +840,16 @@ function toUserMessage(error: unknown): string {
 function registerCashClosureHandlers() {
   ipcMain.handle("cashClosure:close", async (_event, data: CashClosureCloseJSON) => {
     try {
+      const config = getCashClosureReminderConfig();
+      const closedAtISO = data.closedAt?.trim() ? data.closedAt : new Date().toISOString();
+      const auditNote = buildClosureAuditNote(closedAtISO, config.closureTime);
+      const notes = [data.notes?.trim() || "", auditNote].filter(Boolean).join(" | ");
+
       const result = await cashClosureService.closeDaily({
-        closedAt: data.closedAt,
+        closedAt: closedAtISO,
         businessDate: data.businessDate,
         userId: data.userId,
-        notes: data.notes,
+        notes,
         isFinal: data.isFinal,
       });
 
@@ -793,7 +885,7 @@ export function registerAllIpcHandlers() {
 
 export async function hasOpenCashRegister(): Promise<boolean> {
   const opened = await cashRegisterRepository.findOpen();
-  return !!opened;
+  return opened !== null;
 }
 
 // ─── Cleanup ──────────────────────────────────────────────────────────────────

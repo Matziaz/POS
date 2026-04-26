@@ -369,11 +369,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ initialSection = "setup" }
 
       {activeSection === "config" && (
         <AdminConfigurationSection
-          onSave={async (retailContext) => {
+          onSave={async ({ retailContext, reminderTime, closureTime }) => {
             await runSetupAction(
               async () => {
                 if (!electronAPI) throw new Error("Electron API no disponible")
                 await electronAPI.configurationSaveInitial({ retailContext })
+                await electronAPI.cashClosureReminderConfigSave({ reminderTime, closureTime })
               },
               "Configuración actualizada correctamente"
             )

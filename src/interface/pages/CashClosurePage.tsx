@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { Button } from "@interface/components/ui/button"
 import { Input } from "@interface/components/ui/input"
+import { useCashRegister } from "@interface/hooks/useCashRegister"
+import { DEFAULT_USER_ID } from "@shared/constants/constants"
 
 type CashClosureView = {
   id: string
@@ -57,6 +59,15 @@ function formatDateTime(value: string): string {
 
 export const CashClosurePage: React.FC = () => {
   const today = useMemo(() => new Date(), [])
+  const {
+    cashRegister,
+    isLoading: isLoadingCashRegister,
+    isOpening: isOpeningCashRegister,
+    error: cashRegisterError,
+    fetchOpenCashRegister,
+    openCashRegister,
+    clearError: clearCashRegisterError,
+  } = useCashRegister()
 
   const [businessDate, setBusinessDate] = useState(today.toISOString().slice(0, 10))
   const [notes, setNotes] = useState("")
@@ -64,6 +75,7 @@ export const CashClosurePage: React.FC = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [openingAmountInput, setOpeningAmountInput] = useState("0")
 
   const [closures, setClosures] = useState<CashClosureView[]>([])
   const [lastBreakdown, setLastBreakdown] = useState<CashClosureBreakdownView[]>([])
@@ -95,21 +107,36 @@ export const CashClosurePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    const off = window.electronAPI?.onCashClosurePrecloseAlert?.((payload) => {
-      setPrecloseAlert(payload)
-      if (payload.businessDate) {
-        setBusinessDate(payload.businessDate)
-      }
-    })
+  const handleOpenCashRegister = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
 
-    return () => {
-      off?.()
+    const openingAmount = Number(openingAmountInput)
+    if (!Number.isFinite(openingAmount) || openingAmount < 0) {
+      setError("Ingresa un monto inicial valido")
+      return
     }
-  }, [])
+
+    try {
+      setError(null)
+      setSuccess(null)
+
+      await openCashRegister({
+        openingAmount,
+        openedByUserId: DEFAULT_USER_ID,
+      })
+
+      setSuccess("Caja abierta correctamente")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible abrir la caja")
+    }
+  }
 
   const handleCloseCash = async () => {
     try {
+      if (!cashRegister) {
+        throw new Error("No hay una caja abierta para cerrar")
+      }
+
       setIsClosing(true)
       setError(null)
       setSuccess(null)
@@ -129,6 +156,7 @@ export const CashClosurePage: React.FC = () => {
       setPrecloseAlert(null)
       setNotes("")
       await loadHistory()
+      await fetchOpenCashRegister()
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible generar el corte")
     } finally {
@@ -136,18 +164,75 @@ export const CashClosurePage: React.FC = () => {
     }
   }
 
+  const handleClearMessages = () => {
+    setError(null)
+    setSuccess(null)
+    clearCashRegisterError()
+  }
+
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Corte de caja</h1>
         <p className="mt-1 text-muted-foreground">
-          Genera un cierre diario formal con folio, total vendido y cantidad de ventas.
+          Gestiona apertura, estado operativo y cierre diario en un solo flujo.
         </p>
       </header>
 
-      {(error || success) && (
-        <div className={`mb-4 rounded-md p-3 text-sm ${error ? "bg-destructive/10 text-destructive" : "bg-emerald-100 text-emerald-700"}`}>
-          {error ?? success}
+      <section className="mb-6 rounded-lg border bg-card p-4 text-sm">
+        <h2 className="mb-3 text-lg font-semibold">Estado operativo</h2>
+
+        {isLoadingCashRegister ? (
+          <p className="text-muted-foreground">Verificando estado operativo de caja...</p>
+        ) : cashRegister ? (
+          <div className="space-y-3">
+            <p>
+              Caja abierta detectada: <span className="font-mono text-xs">{cashRegister.id}</span>
+            </p>
+            <p className="text-muted-foreground">
+              Monto apertura: <span className="font-medium text-foreground">{formatMoney(cashRegister.openingAmount)}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              No hay caja abierta. Abre la caja desde aqui para habilitar el cierre diario.
+            </p>
+
+            <form className="grid gap-3 md:max-w-sm" onSubmit={handleOpenCashRegister}>
+              <label className="grid gap-1 text-sm">
+                <span className="text-muted-foreground">Monto inicial</span>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={openingAmountInput}
+                  onChange={(event) => setOpeningAmountInput(event.target.value)}
+                  placeholder="0.00"
+                />
+              </label>
+
+              <div className="flex items-center gap-2">
+                <Button type="submit" disabled={isOpeningCashRegister}>
+                  {isOpeningCashRegister ? "Abriendo caja..." : "Abrir caja"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => void fetchOpenCashRegister()}>
+                  Revalidar estado
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+      </section>
+
+      {(error || success || cashRegisterError) && (
+        <div className={`mb-4 rounded-md p-3 text-sm ${(error || cashRegisterError) ? "bg-destructive/10 text-destructive" : "bg-emerald-100 text-emerald-700"}`}>
+          <div className="flex items-center justify-between gap-3">
+            <span>{error ?? cashRegisterError ?? success}</span>
+            <Button variant="ghost" size="sm" onClick={handleClearMessages}>
+              Cerrar
+            </Button>
+          </div>
         </div>
       )}
 
@@ -191,7 +276,7 @@ export const CashClosurePage: React.FC = () => {
         </div>
 
         <div className="mt-4 flex items-center gap-3">
-          <Button onClick={handleCloseCash} disabled={isClosing}>
+          <Button onClick={handleCloseCash} disabled={isClosing || isLoadingCashRegister || !cashRegister}>
             {isClosing ? "Generando corte..." : "Generar corte diario"}
           </Button>
           <Button variant="outline" onClick={() => void loadHistory()} disabled={isLoadingHistory}>

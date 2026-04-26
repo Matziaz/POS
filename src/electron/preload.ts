@@ -197,10 +197,15 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[];
 }
 
-interface CashClosurePrecloseAlertJSON {
+interface CashClosureReminderConfigJSON {
+  reminderTime: string;
+  closureTime: string;
+}
+
+interface CashClosurePreCloseReminderJSON {
   businessDate: string;
   triggeredAt: string;
-  message: string;
+  scheduledTime: string;
 }
 
 interface PaymentMethodJSON {
@@ -315,6 +320,12 @@ const electronAPI = {
     ipcRenderer.invoke("configuration:isSetupComplete"),
   configurationSaveInitial: (data: ConfigurationCreateJSON): Promise<ConfigurationJSON> =>
     ipcRenderer.invoke("configuration:saveInitial", data),
+  cashClosureReminderConfigGet: (): Promise<CashClosureReminderConfigJSON> =>
+    ipcRenderer.invoke("cashClosure:reminderConfigGet"),
+  cashClosureReminderConfigSave: (data: CashClosureReminderConfigJSON): Promise<CashClosureReminderConfigJSON> =>
+    ipcRenderer.invoke("cashClosure:reminderConfigSave", data),
+  cashClosureGetPendingReminder: (): Promise<CashClosurePreCloseReminderJSON | null> =>
+    ipcRenderer.invoke("cashClosure:getPendingReminder"),
 
   // Cash Register
   cashRegisterGetOpen: (): Promise<CashRegisterJSON | null> =>
@@ -327,15 +338,16 @@ const electronAPI = {
     ipcRenderer.invoke("cashClosure:close", data),
   cashClosureListByDateRange: (fromISO: string, toISO: string): Promise<CashClosureJSON[]> =>
     ipcRenderer.invoke("cashClosure:listByDateRange", fromISO, toISO),
-  onCashClosurePrecloseAlert: (
-    listener: (payload: CashClosurePrecloseAlertJSON) => void
+  onCashClosurePreCloseReminder: (
+    callback: (payload: CashClosurePreCloseReminderJSON) => void,
   ): (() => void) => {
-    const wrappedListener = (_event: Electron.IpcRendererEvent, payload: CashClosurePrecloseAlertJSON) => {
-      listener(payload);
+    const listener = (_event: Electron.IpcRendererEvent, payload: CashClosurePreCloseReminderJSON) => {
+      callback(payload);
     };
-    ipcRenderer.on("cashClosure:precloseAlert", wrappedListener);
+
+    ipcRenderer.on("cashClosure:preCloseReminder", listener);
     return () => {
-      ipcRenderer.removeListener("cashClosure:precloseAlert", wrappedListener);
+      ipcRenderer.removeListener("cashClosure:preCloseReminder", listener);
     };
   },
 

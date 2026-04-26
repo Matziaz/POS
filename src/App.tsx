@@ -9,11 +9,19 @@ import { CashClosurePage } from '@interface/pages/CashClosurePage'
 import { AdminPage } from '@interface/pages/AdminPage'
 import { InitialSetupPage } from '@interface/pages/InitialSetupPage'
 import { AppLayout } from '@interface/components/layout'
+import { Button } from '@interface/components/ui/button'
 import { ContactsPage } from './interface/pages/ContactsPage'
+
+type CashClosurePreCloseReminderView = {
+  businessDate: string
+  triggeredAt: string
+  scheduledTime: string
+}
 
 export const App: React.FC = () => {
   const [isCheckingSetup, setIsCheckingSetup] = useState(true)
   const [isSetupComplete, setIsSetupComplete] = useState(false)
+  const [globalReminder, setGlobalReminder] = useState<CashClosurePreCloseReminderView | null>(null)
 
   const refreshSetupStatus = useCallback(async () => {
     try {
@@ -34,6 +42,37 @@ export const App: React.FC = () => {
   useEffect(() => {
     void refreshSetupStatus()
   }, [refreshSetupStatus])
+
+  useEffect(() => {
+    if (!isSetupComplete || !window.electronAPI?.onCashClosurePreCloseReminder) {
+      return
+    }
+
+    let cancelled = false
+
+    const syncPendingReminder = async () => {
+      const pending = await window.electronAPI?.cashClosureGetPendingReminder?.()
+      if (!cancelled && pending) {
+        setGlobalReminder(pending)
+      }
+    }
+
+    void syncPendingReminder()
+
+    const reminderPoll = window.setInterval(() => {
+      void syncPendingReminder()
+    }, 10_000)
+
+    const unsubscribe = window.electronAPI.onCashClosurePreCloseReminder((payload) => {
+      setGlobalReminder(payload)
+    })
+
+    return () => {
+      cancelled = true
+      window.clearInterval(reminderPoll)
+      unsubscribe()
+    }
+  }, [isSetupComplete])
 
   if (isCheckingSetup) {
     return (
@@ -59,6 +98,18 @@ export const App: React.FC = () => {
   return (
     <HashRouter>
       <AppLayout>
+        {globalReminder && (
+          <div className="sticky top-14 z-40 mx-4 mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span>
+                Recordatorio de corte: corresponde cerrar la caja del dia {globalReminder.businessDate} (programado {globalReminder.scheduledTime}).
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setGlobalReminder(null)}>
+                Ocultar
+              </Button>
+            </div>
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<Navigate to="/inventario" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
