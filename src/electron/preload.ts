@@ -217,6 +217,13 @@ interface PaymentMethodUpdateJSON {
   displayOrder?: number | null;
 }
 
+interface ProductListFiltersJSON {
+  search?: string;
+  typeId?: string;
+  providerId?: string;
+  stockStatus?: "all" | "in_stock" | "low_stock" | "out_of_stock";
+}
+
 // ─── API expuesta al renderer como window.electronAPI ─────────────────────────
 
 const electronAPI = {
@@ -224,11 +231,12 @@ const electronAPI = {
   productList: (): Promise<ProductJSON[]> =>
     ipcRenderer.invoke("product:list"),
   productListPaginated: (
-    page: number,
-    pageSize: number,
-    options?: ProductListSortOptionsJSON
-  ): Promise<{ products: ProductJSON[]; total: number }> =>
-    ipcRenderer.invoke("product:listPaginated", page, pageSize, options),
+  page: number,
+  pageSize: number,
+  options?: ProductListSortOptionsJSON,
+  filters?: ProductListFiltersJSON
+): Promise<{ products: ProductJSON[]; total: number }> =>
+  ipcRenderer.invoke("product:listPaginated", page, pageSize, options, filters),
   productFindById: (id: string): Promise<ProductJSON | null> =>
     ipcRenderer.invoke("product:findById", id),
   productFindBySku: (sku: string): Promise<ProductJSON | null> =>

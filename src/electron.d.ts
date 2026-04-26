@@ -21,6 +21,13 @@ interface ProductListSortOptionsJSON {
   sortDirection?: "asc" | "desc"
 }
 
+interface ProductListFiltersJSON {
+  search?: string
+  typeId?: string
+  providerId?: string
+  stockStatus?: "all" | "in_stock" | "low_stock" | "out_of_stock"
+}
+
 interface ProductTypeJSON {
   id: string
   name: string
@@ -194,7 +201,7 @@ interface CashClosureCloseResultJSON {
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
-  productListPaginated(page: number, pageSize: number, options?: ProductListSortOptionsJSON): Promise<{ products: ProductJSON[]; total: number }>
+  productListPaginated(page: number, pageSize: number, options?: ProductListSortOptionsJSON, filters?: ProductListFiltersJSON): Promise<{ products: ProductJSON[]; total: number }>
   productFindById(id: string): Promise<ProductJSON | null>
   productFindBySku(sku: string): Promise<ProductJSON | null>
   productListDeleted(): Promise<ProductJSON[]>
