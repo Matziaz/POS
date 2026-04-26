@@ -198,6 +198,18 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[]
 }
 
+interface CashClosureReminderConfigJSON {
+  reminderTime: string
+  closureTime: string
+}
+
+interface CashClosurePreCloseReminderJSON {
+  businessDate: string
+  triggeredAt: string
+  scheduledTime: string
+}
+
+
 interface CashClosurePrecloseAlertJSON {
   businessDate: string
   triggeredAt: string
@@ -272,7 +284,7 @@ interface ElectronAPI {
   // Cash Closure
   cashClosureClose(data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON>
   cashClosureListByDateRange(fromISO: string, toISO: string): Promise<CashClosureJSON[]>
-  onCashClosurePrecloseAlert(listener: (payload: CashClosurePrecloseAlertJSON) => void): () => void
+  onCashClosurePreCloseReminder(callback: (payload: CashClosurePreCloseReminderJSON) => void): () => void
 
   // Sale Payments
   salePaymentSave(data: SalePaymentJSON): Promise<void>
@@ -287,6 +299,9 @@ interface ElectronAPI {
   configurationGet(): Promise<ConfigurationJSON | null>
   configurationIsSetupComplete(): Promise<boolean>
   configurationSaveInitial(data: ConfigurationCreateJSON): Promise<ConfigurationJSON>
+  cashClosureReminderConfigGet(): Promise<CashClosureReminderConfigJSON>
+  cashClosureReminderConfigSave(data: CashClosureReminderConfigJSON): Promise<CashClosureReminderConfigJSON>
+  cashClosureGetPendingReminder(): Promise<CashClosurePreCloseReminderJSON | null>
 
   // Cash Register
   cashRegisterGetOpen(): Promise<CashRegisterJSON | null>
