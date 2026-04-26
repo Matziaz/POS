@@ -1,4 +1,4 @@
-# Documentacion Estrategica - POS Adaptable
+# Documentacion Estrategica - Cenzontle POS
 
 Esta carpeta contiene la documentacion estrategica del proyecto: vision del producto, arquitectura y planificacion de desarrollo.
 

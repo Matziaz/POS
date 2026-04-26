@@ -1,4 +1,4 @@
-# POS Polimórfico
+# Cenzontle POS
 
 Sistema de Punto de Venta (POS) diseñado para micro-comercios, con foco en simplicidad, operación offline y adaptabilidad según el tipo de negocio.
 

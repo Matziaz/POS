@@ -9,7 +9,7 @@ import { useEffect } from "react"
 import { useProductStore } from "@interface/store/productStore"
 import type { CreateProductInput, UpdateProductInput } from "@interface/store/productStore"
 import type { ProductProps } from "@core/entities"
-import type { ProductListSortOptions } from "@core/repositories"
+import type { ProductListFilters, ProductListSortOptions } from "@core/repositories"
 
 export interface UseProductsOptions {
   autoFetch?: boolean
@@ -30,11 +30,12 @@ export interface UseProductsReturn {
   selectedProduct: ProductProps | null
   fetchDeletedProducts: () => Promise<void>
   fetchInventoryProducts: (
-    page?: number,
-    pageSize?: number,
-    sortBy?: ProductListSortOptions["sortBy"],
-    sortDirection?: ProductListSortOptions["sortDirection"]
-  ) => Promise<void>
+  page?: number,
+  pageSize?: number,
+  sortBy?: ProductListSortOptions["sortBy"],
+  sortDirection?: ProductListSortOptions["sortDirection"],
+  filters?: ProductListFilters
+) => Promise<void>
   addProduct: (input: CreateProductInput) => Promise<void>
   updateProduct: (id: string, input: UpdateProductInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>

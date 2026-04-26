@@ -10,7 +10,7 @@
 
 import { create } from "zustand"
 import type { ProductProps } from "@core/entities"
-import type { ProductListSortOptions } from "@core/repositories"
+import type { ProductListFilters, ProductListSortOptions } from "@core/repositories"
 import { getProductService, getProductRepository } from "@interface/dev/serviceFactory"
 
 export interface CreateProductInput {
@@ -42,18 +42,21 @@ interface ProductState {
   inventoryPageSize: number
   inventorySortBy: ProductListSortOptions["sortBy"]
   inventorySortDirection: ProductListSortOptions["sortDirection"]
+  inventoryFilters: ProductListFilters
   isLoading: boolean
   isInventoryLoading: boolean
   error: string | null
   selectedProduct: ProductProps | null
-
+  
+  
   fetchProducts: () => Promise<void>
   fetchDeletedProducts: () => Promise<void>
   fetchInventoryProducts: (
-    page?: number,
-    pageSize?: number,
-    sortBy?: ProductListSortOptions["sortBy"],
-    sortDirection?: ProductListSortOptions["sortDirection"]
+  page?: number,
+  pageSize?: number,
+  sortBy?: ProductListSortOptions["sortBy"],
+  sortDirection?: ProductListSortOptions["sortDirection"],
+  filters?: ProductListFilters
   ) => Promise<void>
   addProduct: (input: CreateProductInput) => Promise<void>
   updateProduct: (id: string, input: UpdateProductInput) => Promise<void>
@@ -61,6 +64,8 @@ interface ProductState {
   restoreProduct: (id: string, stock: number) => Promise<void>
   setSelectedProduct: (product: ProductProps | null) => void
   clearError: () => void
+
+  
 }
 
 let inventoryRequestId = 0
@@ -78,6 +83,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   isInventoryLoading: false,
   error: null,
   selectedProduct: null,
+  inventoryFilters: {},
 
   fetchProducts: async () => {
     set({ isLoading: true, error: null })
@@ -107,48 +113,49 @@ export const useProductStore = create<ProductState>((set, get) => ({
     }
   },
 
-  fetchInventoryProducts: async (page, pageSize, sortBy, sortDirection) => {
-    const requestId = ++inventoryRequestId
-    const nextPage = Number.isFinite(page ?? NaN) && (page ?? 0) > 0 ? Math.floor(page as number) : get().inventoryPage
-    const nextPageSize =
-      Number.isFinite(pageSize ?? NaN) && (pageSize ?? 0) > 0
-        ? Math.floor(pageSize as number)
-        : get().inventoryPageSize
-    const nextSortBy = sortBy ?? get().inventorySortBy ?? "createdAt"
-    const nextSortDirection = sortDirection ?? get().inventorySortDirection ?? "desc"
+  fetchInventoryProducts: async (page, pageSize, sortBy, sortDirection, filters) => {
+  const requestId = ++inventoryRequestId
+  const nextPage = Number.isFinite(page ?? NaN) && (page ?? 0) > 0 ? Math.floor(page as number) : get().inventoryPage
+  const nextPageSize = Number.isFinite(pageSize ?? NaN) && (pageSize ?? 0) > 0 ? Math.floor(pageSize as number) : get().inventoryPageSize
+  const nextSortBy = sortBy ?? get().inventorySortBy ?? "createdAt"
+  const nextSortDirection = sortDirection ?? get().inventorySortDirection ?? "desc"
+  const nextFilters = filters !== undefined ? filters : get().inventoryFilters
+
+  set({
+    isInventoryLoading: true,
+    error: null,
+    inventoryPage: nextPage,
+    inventoryPageSize: nextPageSize,
+    inventorySortBy: nextSortBy,
+    inventorySortDirection: nextSortDirection,
+    inventoryFilters: nextFilters,
+  })
+
+  try {
+    const repo = getProductRepository()
+    const result = await repo.listPaginated(
+      nextPage,
+      nextPageSize,
+      { sortBy: nextSortBy, sortDirection: nextSortDirection },
+      nextFilters
+    )
+
+    if (requestId !== inventoryRequestId) return
 
     set({
-      isInventoryLoading: true,
-      error: null,
-      inventoryPage: nextPage,
-      inventoryPageSize: nextPageSize,
-      inventorySortBy: nextSortBy,
-      inventorySortDirection: nextSortDirection,
+      inventoryProducts: result.products.map((p) => p.toJSON()),
+      inventoryTotal: result.total,
+      isInventoryLoading: false,
     })
+  } catch (err) {
+    if (requestId !== inventoryRequestId) return
 
-    try {
-      const repo = getProductRepository()
-      const result = await repo.listPaginated(nextPage, nextPageSize, {
-        sortBy: nextSortBy,
-        sortDirection: nextSortDirection,
-      })
-
-      if (requestId !== inventoryRequestId) return
-
-      set({
-        inventoryProducts: result.products.map((p) => p.toJSON()),
-        inventoryTotal: result.total,
-        isInventoryLoading: false,
-      })
-    } catch (err) {
-      if (requestId !== inventoryRequestId) return
-
-      set({
-        error: err instanceof Error ? err.message : "Error al cargar inventario paginado",
-        isInventoryLoading: false,
-      })
-    }
-  },
+    set({
+      error: err instanceof Error ? err.message : "Error al cargar inventario paginado",
+      isInventoryLoading: false,
+    })
+  }
+},
 
   addProduct: async (input: CreateProductInput) => {
     set({ isLoading: true, error: null })

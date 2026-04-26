@@ -264,6 +264,13 @@ interface PaymentMethodUpdateJSON {
   displayOrder?: number | null;
 }
 
+interface ProductListFiltersJSON {
+  search?: string;
+  typeId?: string;
+  providerId?: string;
+  stockStatus?: "all" | "in_stock" | "low_stock" | "out_of_stock";
+}
+
 // ─── Product handlers ─────────────────────────────────────────────────────────
 
 function registerProductHandlers() {
@@ -272,12 +279,12 @@ function registerProductHandlers() {
     return products.map((product) => product.toJSON());
   });
 
-  ipcMain.handle("product:listPaginated", async (_event, page: number, pageSize: number, options?: ProductListSortOptionsJSON) => {
-    const result = await productRepository.listPaginated(page, pageSize, options);
-    return {
-      products: result.products.map((product) => product.toJSON()),
-      total: result.total,
-    };
+  ipcMain.handle("product:listPaginated", async (_event, page: number, pageSize: number, options?: ProductListSortOptionsJSON, filters?: ProductListFiltersJSON) => {
+  const result = await productRepository.listPaginated(page, pageSize, options, filters);
+  return {
+    products: result.products.map((product) => product.toJSON()),
+    total: result.total,
+  };
   });
 
   ipcMain.handle("product:findById", async (_event, id: string) => {

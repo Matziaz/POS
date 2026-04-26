@@ -9,6 +9,13 @@ export interface ProductListSortOptions {
     sortDirection?: SortDirection;
 }
 
+export interface ProductListFilters {
+    search?: string;
+    typeId?: string;
+    providerId?: string;
+    stockStatus?: "all" | "in_stock" | "low_stock" | "out_of_stock";
+}
+
 export interface ProductRepository {
     save(product: Product): Promise<void>;
     update(product: Product): Promise<void>;
@@ -16,7 +23,7 @@ export interface ProductRepository {
     findById(id: string): Promise<Product | null>;
     findBySku(sku: string): Promise<Product | null>;
     list(): Promise<Product[]>;
-    listPaginated(page: number, pageSize: number, options?: ProductListSortOptions): Promise<{ products: Product[]; total: number }>;
+    listPaginated(page: number, pageSize: number, options?: ProductListSortOptions, filters?: ProductListFilters): Promise<{ products: Product[]; total: number }>;
     listDeleted(): Promise<Product[]>;
     restore(id: string, stock: number): Promise<void>;
 }

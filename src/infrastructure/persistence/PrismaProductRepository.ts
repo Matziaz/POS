@@ -1,4 +1,4 @@
-import type { ProductListSortOptions, ProductRepository, SortDirection } from "../../core/repositories/ProductRepository";
+import type { ProductListFilters, ProductListSortOptions, ProductRepository, SortDirection } from "../../core/repositories/ProductRepository";
 import { Product } from "../../core/entities";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../database/prismaClient";
@@ -100,7 +100,8 @@ export class PrismaProductRepository implements ProductRepository {
   async listPaginated(
     page: number,
     pageSize: number,
-    options?: ProductListSortOptions
+    options?: ProductListSortOptions,
+    filters?: ProductListFilters
   ): Promise<{ products: Product[]; total: number }> {
     const safePage = normalizePage(page, 1);
     const safePageSize = normalizePage(pageSize, 10);
@@ -125,10 +126,36 @@ export class PrismaProductRepository implements ProductRepository {
       }
     })();
 
-    const [total, rows] = await Promise.all([
-      this.db.product.count({ where: { deleted_at: null } }),
-      this.db.product.findMany({
-        where: { deleted_at: null },
+   const where: any = { deleted_at: null }
+
+    if (filters?.search?.trim()) {
+      const term = `%${filters.search.trim()}%`
+      const matchingIds = await this.db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM product 
+        WHERE deleted_at IS NULL 
+        AND (LOWER(name) LIKE LOWER(${term}) OR LOWER(sku) LIKE LOWER(${term}))
+      `
+    where.id = { in: matchingIds.map((r) => r.id) }
+  }
+
+    if (filters?.typeId?.trim()) {
+      where.type_id = filters.typeId.trim()
+    }
+
+    if (filters?.providerId?.trim()) {
+      where.provider_id = filters.providerId.trim()
+    }
+
+    if (filters?.stockStatus && filters.stockStatus !== "all") {
+      if (filters.stockStatus === "out_of_stock") where.stock = 0
+      if (filters.stockStatus === "low_stock") where.stock = { gt: 0, lte: 5 }
+      if (filters.stockStatus === "in_stock") where.stock = { gt: 5 }
+    }
+
+const [total, rows] = await Promise.all([
+  this.db.product.count({ where }),
+  this.db.product.findMany({
+    where,
         orderBy,
         skip: (safePage - 1) * safePageSize,
         take: safePageSize,

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react"
-import { Plus } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import type { ProductProps } from "@core/entities"
 import { DEFAULT_PRODUCT_TYPE_ID, DEFAULT_PROVIDER_ID } from "@core/constants"
-import type { ProductSortField, SortDirection } from "@core/repositories"
+import type {ProductListFilters, ProductSortField, SortDirection } from "@core/repositories"
 import { useProducts } from "@interface/hooks/useProducts"
 import {
   ProductTable,
@@ -33,12 +33,16 @@ export const InventoryPage: React.FC = () => {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<ProductProps | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<ProductProps | null>(null)
+  
 
   const [notification, setNotification] = useState<{
     type: "success" | "error"
     message: string
   } | null>(null)
   const [isMutating, setIsMutating] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [draftFilters, setDraftFilters] = useState<ProductListFilters>({})
+  const [activeFilters, setActiveFilters] = useState<ProductListFilters>({})
   const [productTypes, setProductTypes] = useState<ProductTypeOption[]>([
     { id: DEFAULT_PRODUCT_TYPE_ID, name: "General" },
   ])
@@ -178,6 +182,22 @@ export const InventoryPage: React.FC = () => {
     const nextDirection: SortDirection = inventorySortBy === field && inventorySortDirection === "asc" ? "desc" : "asc"
     await fetchInventoryProducts(1, inventoryPageSize, field, nextDirection)
   }
+  const handleApplyFilters = async (filters: ProductListFilters) => {
+  setActiveFilters(filters)
+  setFiltersOpen(false)
+  await fetchInventoryProducts(1, inventoryPageSize, inventorySortBy, inventorySortDirection, filters)
+  }
+
+  const handleClearFilters = async () => {
+    setDraftFilters({})
+    setActiveFilters({})
+    setFiltersOpen(false)
+    await fetchInventoryProducts(1, inventoryPageSize, inventorySortBy, inventorySortDirection, {})
+  }
+
+  const hasActiveFilters = Boolean(
+    activeFilters.search || activeFilters.typeId || activeFilters.providerId || activeFilters.stockStatus
+  )
 
   const changePage = async (nextPage: number) => {
     await fetchInventoryProducts(nextPage, inventoryPageSize, inventorySortBy, inventorySortDirection)
@@ -198,6 +218,94 @@ export const InventoryPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Barra de filtros */}
+<div className="mb-4 flex items-center gap-2 relative">
+  <div className="flex w-80 items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+  <input
+    type="text"
+    placeholder="Buscar por nombre o SKU..."
+    className="flex-1 bg-transparent text-sm outline-none"
+      value={draftFilters.search ?? ""}
+      onChange={(e) => setDraftFilters((prev) => ({ ...prev, search: e.target.value }))}
+      onKeyDown={(e) => { if (e.key === "Enter") void handleApplyFilters(draftFilters) }}
+    />
+  </div>
+
+  <Button
+    variant={hasActiveFilters ? "default" : "outline"}
+    size="sm"
+    onClick={() => setFiltersOpen((prev) => !prev)}
+  >
+    Filtros ▾
+  </Button>
+
+  {hasActiveFilters && (
+    <Button variant="ghost" size="sm" onClick={() => void handleClearFilters()}>
+      ✕ Limpiar
+    </Button>
+  )}
+
+  {/* Dropdown de filtros */}
+  {filtersOpen && (
+    <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-xl border bg-card p-4 shadow-lg">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-medium">Filtrar productos</span>
+        <button type="button" onClick={() => setFiltersOpen(false)} className="text-muted-foreground text-sm">✕</button>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Tipo</p>
+          <select
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            value={draftFilters.typeId ?? ""}
+            onChange={(e) => setDraftFilters((prev) => ({ ...prev, typeId: e.target.value || undefined }))}
+          >
+            <option value="">Todos los tipos</option>
+            {productTypes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Proveedor</p>
+          <select
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            value={draftFilters.providerId ?? ""}
+            onChange={(e) => setDraftFilters((prev) => ({ ...prev, providerId: e.target.value || undefined }))}
+          >
+            <option value="">Todos los proveedores</option>
+            {providers.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Stock</p>
+          <select
+            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            value={draftFilters.stockStatus ?? ""}
+            onChange={(e) => setDraftFilters((prev) => ({ ...prev, stockStatus: (e.target.value || undefined) as ProductListFilters["stockStatus"] }))}
+          >
+            <option value="">Todos</option>
+            <option value="in_stock">Con stock</option>
+            <option value="low_stock">Stock bajo (≤5)</option>
+            <option value="out_of_stock">Sin stock</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2 border-t pt-3">
+        <Button variant="outline" size="sm" onClick={() => setFiltersOpen(false)}>Cancelar</Button>
+        <Button size="sm" onClick={() => void handleApplyFilters(draftFilters)}>Aplicar</Button>
+      </div>
+    </div>
+  )}
+</div>
+      
       {notification && (
         <div
           className={`mb-4 rounded-md p-3 text-sm ${

@@ -1,4 +1,4 @@
-# Guia de Desarrollo — POS Adaptable
+# Guia de Desarrollo — Cenzontle POS
 
 ## Setup Inicial
 

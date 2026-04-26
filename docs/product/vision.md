@@ -1,4 +1,4 @@
-# Qué es el POS Adaptable
+# Qué es Cenzontle POS
 
 Es un sistema para registrar ventas, controlar tu inventario y entender cómo le va a tu negocio, sin necesidad de internet ni conocimientos técnicos.
 
