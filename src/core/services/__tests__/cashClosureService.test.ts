@@ -214,4 +214,30 @@ describe("CashClosureService", () => {
 
     await expect(service.closeDaily()).rejects.toBeInstanceOf(ValidationError)
   })
+
+  it("uses openedByUserId when close input omits userId", async () => {
+    const openRegister = CashRegister.create({
+      id: "register_2",
+      openingAmount: 100,
+      status: "open",
+      openedAt: "2026-04-13T08:00:00.000Z",
+      openedByUserId: "user_cashier_002",
+    })
+
+    const service = new CashClosureService(
+      inMemorySaleRepo([]),
+      inMemorySalePaymentRepo([]),
+      inMemoryCashClosureRepo(),
+      inMemoryBreakdownRepo(),
+      inMemoryCashRegisterRepo([openRegister]),
+    )
+
+    const result = await service.closeDaily({
+      businessDate: "2026-04-13",
+      closedAt: "2026-04-13T12:00:00.000Z",
+      isFinal: true,
+    })
+
+    expect(result.closure.userId).toBe("user_cashier_002")
+  })
 })

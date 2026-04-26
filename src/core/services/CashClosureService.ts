@@ -30,7 +30,9 @@ function toISOOrNow(value?: string): string {
 
 function buildFolio(businessDate: string): string {
   const compactDate = businessDate.replace(/-/g, "");
-  return `CC-${compactDate}-${newId().slice(0, 8).toUpperCase()}`;
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `CC-${compactDate}-${timestamp}${random}`;
 }
 
 export class CashClosureService {
@@ -57,6 +59,7 @@ export class CashClosureService {
 
     const businessDate = (input.businessDate?.trim() || closedAtISO.slice(0, 10));
     const folio = buildFolio(businessDate);
+    const closureUserId = input.userId?.trim() || openRegister.openedByUserId;
 
     const sales = await this.saleRepository.findByDateRange(new Date(openedAtISO), new Date(closedAtISO));
     const salesInRegister = sales.filter((sale) => sale.cashRegisterId === openRegister.id);
@@ -82,7 +85,7 @@ export class CashClosureService {
       closedAt: closedAtISO,
       salesCount,
       totalAmount,
-      userId: input.userId?.trim() || null,
+      userId: closureUserId,
       notes: input.notes?.trim() || null,
       isFinal: input.isFinal === false ? 0 : 1,
     });

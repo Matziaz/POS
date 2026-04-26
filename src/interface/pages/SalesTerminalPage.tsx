@@ -2,12 +2,11 @@ import React, { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowLeftRight } from "lucide-react"
 import { Button } from "@interface/components/ui/button"
-import { Input } from "@interface/components/ui/input"
 import { useProducts } from "@interface/hooks/useProducts"
 import { useSales } from "@interface/hooks/useSales"
+import { useCashRegister } from "@interface/hooks/useCashRegister"
 import type { RegisterSalePaymentInput } from "@interface/store/salesStore"
 import { useSaleSessionStore } from "@interface/store/saleSessionStore"
-import { DEFAULT_USER_ID } from "@shared/constants/constants"
 import {
   CategoryTabs,
   CheckoutModal,
@@ -25,17 +24,15 @@ interface ProductTypeOption {
   name: string
 }
 
-interface OpenCashRegisterView {
-  id: string
-  openingAmount: number
-  status: string
-  openedAt: string
-  openedByUserId: string
-}
-
 export const SalesTerminalPage: React.FC = () => {
   const { products, isLoading: isLoadingProducts, error: productsError, refetch: refetchProducts } = useProducts()
   const { registerSale, isLoading: isRegisteringSale, error: salesError, clearError } = useSales()
+  const {
+    cashRegister,
+    isLoading: isLoadingCashRegister,
+    error: cashRegisterError,
+    clearError: clearCashRegisterError,
+  } = useCashRegister()
 
   const lines = useSaleSessionStore((state) => state.lines)
   const addProduct = useSaleSessionStore((state) => state.addProduct)
@@ -51,10 +48,6 @@ export const SalesTerminalPage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [total, setTotal] = useState(0)
-  const [cashRegister, setCashRegister] = useState<OpenCashRegisterView | null>(null)
-  const [isCheckingCashRegister, setIsCheckingCashRegister] = useState(true)
-  const [openingAmountInput, setOpeningAmountInput] = useState("0")
-  const [isOpeningCashRegister, setIsOpeningCashRegister] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -72,29 +65,6 @@ export const SalesTerminalPage: React.FC = () => {
     }
 
     loadProductTypes()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  useEffect(() => {
-    let isMounted = true
-
-    const loadOpenCashRegister = async () => {
-      try {
-        const opened = await window.electronAPI?.cashRegisterGetOpen?.()
-        if (!isMounted) return
-        setCashRegister(opened ?? null)
-      } catch (error) {
-        if (!isMounted) return
-        setCheckoutError(error instanceof Error ? error.message : "No fue posible validar la caja abierta")
-      } finally {
-        if (isMounted) setIsCheckingCashRegister(false)
-      }
-    }
-
-    void loadOpenCashRegister()
 
     return () => {
       isMounted = false
@@ -160,39 +130,10 @@ export const SalesTerminalPage: React.FC = () => {
     }
   }
 
-  const handleOpenCashRegister = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    const openingAmount = Number(openingAmountInput)
-    if (!Number.isFinite(openingAmount) || openingAmount < 0) {
-      setCheckoutError("Ingresa un monto inicial valido")
-      return
-    }
-
-    try {
-      setIsOpeningCashRegister(true)
-      setCheckoutError(null)
-
-      const opened = await window.electronAPI?.cashRegisterOpen({
-        openingAmount,
-        openedByUserId: DEFAULT_USER_ID,
-      })
-
-      if (!opened) {
-        throw new Error("No se pudo abrir la caja")
-      }
-
-      setCashRegister(opened)
-    } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "No fue posible abrir la caja")
-    } finally {
-      setIsOpeningCashRegister(false)
-    }
-  }
-
   const handleClearError = () => {
     setCheckoutError(null)
     setProductTypeError(null)
+    clearCashRegisterError()
     clearError()
   }
 
@@ -214,10 +155,10 @@ export const SalesTerminalPage: React.FC = () => {
         </Button>
       </header>
 
-      {(productsError || salesError || checkoutError || productTypeError) && (
+      {(productsError || salesError || checkoutError || productTypeError || cashRegisterError) && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           <div className="flex items-center justify-between gap-4">
-            <span>{checkoutError ?? salesError ?? productsError ?? productTypeError}</span>
+            <span>{checkoutError ?? cashRegisterError ?? salesError ?? productsError ?? productTypeError}</span>
             <Button variant="ghost" size="sm" onClick={handleClearError}>
               Cerrar
             </Button>
@@ -225,7 +166,7 @@ export const SalesTerminalPage: React.FC = () => {
         </div>
       )}
 
-      {isCheckingCashRegister ? (
+      {isLoadingCashRegister ? (
         <div className="rounded-lg border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
           Verificando estado de caja...
         </div>
@@ -233,26 +174,17 @@ export const SalesTerminalPage: React.FC = () => {
         <section className="mx-auto w-full max-w-xl rounded-xl border bg-card p-6">
           <h2 className="text-xl font-semibold tracking-tight">Apertura de caja requerida</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Para registrar ventas primero debes abrir una caja.
+            Para registrar ventas, abre la caja desde la pantalla de corte de caja.
           </p>
 
-          <form className="mt-6 grid gap-4" onSubmit={handleOpenCashRegister}>
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium">Monto inicial</span>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={openingAmountInput}
-                onChange={(event) => setOpeningAmountInput(event.target.value)}
-                placeholder="0.00"
-              />
-            </label>
-
-            <Button type="submit" disabled={isOpeningCashRegister}>
-              {isOpeningCashRegister ? "Abriendo caja..." : "Abrir caja"}
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/caja/cierre">Ir a Corte Caja</Link>
             </Button>
-          </form>
+            <Button variant="outline" onClick={handleClearError}>
+              Limpiar mensaje
+            </Button>
+          </div>
         </section>
       ) : (
       <>

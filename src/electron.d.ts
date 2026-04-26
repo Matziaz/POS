@@ -198,6 +198,44 @@ interface CashClosureCloseResultJSON {
   breakdown: CashClosurePaymentBreakdownJSON[]
 }
 
+interface CashClosureReminderConfigJSON {
+  reminderTime: string
+  closureTime: string
+}
+
+interface CashClosurePreCloseReminderJSON {
+  businessDate: string
+  triggeredAt: string
+  scheduledTime: string
+}
+
+
+interface CashClosurePrecloseAlertJSON {
+  businessDate: string
+  triggeredAt: string
+  message: string
+}
+
+interface PaymentMethodJSON {
+  id: string
+  method: string
+  isCash: number
+  isActive: number
+  displayOrder: number | null
+}
+
+interface PaymentMethodCreateJSON {
+  method: string
+  isCash: number
+  displayOrder?: number | null
+}
+
+interface PaymentMethodUpdateJSON {
+  id: string
+  method: string
+  displayOrder?: number | null
+}
+
 interface ElectronAPI {
   // Products
   productList(): Promise<ProductJSON[]>
@@ -238,10 +276,15 @@ interface ElectronAPI {
   
   // Payment Methods
   paymentMethodListActive(): Promise<any[]>
+  paymentMethodList(): Promise<PaymentMethodJSON[]>
+  paymentMethodCreate(data: PaymentMethodCreateJSON): Promise<PaymentMethodJSON>
+  paymentMethodUpdate(data: PaymentMethodUpdateJSON): Promise<void>
+  paymentMethodToggleActive(id: string): Promise<PaymentMethodJSON>
   
   // Cash Closure
   cashClosureClose(data: CashClosureCloseJSON): Promise<CashClosureCloseResultJSON>
   cashClosureListByDateRange(fromISO: string, toISO: string): Promise<CashClosureJSON[]>
+  onCashClosurePreCloseReminder(callback: (payload: CashClosurePreCloseReminderJSON) => void): () => void
 
   // Sale Payments
   salePaymentSave(data: SalePaymentJSON): Promise<void>
@@ -256,6 +299,9 @@ interface ElectronAPI {
   configurationGet(): Promise<ConfigurationJSON | null>
   configurationIsSetupComplete(): Promise<boolean>
   configurationSaveInitial(data: ConfigurationCreateJSON): Promise<ConfigurationJSON>
+  cashClosureReminderConfigGet(): Promise<CashClosureReminderConfigJSON>
+  cashClosureReminderConfigSave(data: CashClosureReminderConfigJSON): Promise<CashClosureReminderConfigJSON>
+  cashClosureGetPendingReminder(): Promise<CashClosurePreCloseReminderJSON | null>
 
   // Cash Register
   cashRegisterGetOpen(): Promise<CashRegisterJSON | null>

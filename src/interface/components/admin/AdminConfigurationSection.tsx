@@ -4,7 +4,7 @@ import { Badge } from "@interface/components/ui/badge"
 import { Button } from "@interface/components/ui/button"
 
 interface AdminConfigurationSectionProps {
-  onSave: (retailContext: string) => Promise<void>
+  onSave: (input: { retailContext: string; reminderTime: string; closureTime: string }) => Promise<void>
 }
 
 export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps> = ({
@@ -16,6 +16,10 @@ export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps>
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [currentReminderTime, setCurrentReminderTime] = useState<string>("23:45")
+  const [reminderTime, setReminderTime] = useState<string>("23:45")
+  const [currentClosureTime, setCurrentClosureTime] = useState<string>("23:59")
+  const [closureTime, setClosureTime] = useState<string>("23:59")
 
   useEffect(() => {
     let active = true
@@ -24,9 +28,10 @@ export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps>
         const electronAPI = window.electronAPI
         if (!electronAPI) throw new Error("Electron API no disponible")
 
-        const [config, contexts] = await Promise.all([
+        const [config, contexts, reminderConfig] = await Promise.all([
           electronAPI.configurationGet(),
           electronAPI.configurationListContexts(),
+          electronAPI.cashClosureReminderConfigGet?.() ?? Promise.resolve({ reminderTime: "23:45", closureTime: "23:59" }),
         ])
 
         if (!active) return
@@ -39,6 +44,10 @@ export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps>
         const active_ctx = config?.retailContext ?? normalized[0] ?? ""
         setCurrentContext(active_ctx)
         setSelectedContext(active_ctx)
+        setCurrentReminderTime(reminderConfig.reminderTime)
+        setReminderTime(reminderConfig.reminderTime)
+        setCurrentClosureTime(reminderConfig.closureTime)
+        setClosureTime(reminderConfig.closureTime)
       } catch (err) {
         if (!active) return
         setSubmitError(err instanceof Error ? err.message : "Error al cargar configuración")
@@ -51,15 +60,17 @@ export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps>
     return () => { active = false }
   }, [])
 
-  const hasChanges = selectedContext !== currentContext
-  const canSubmit = hasChanges && selectedContext.length > 0
+  const hasChanges = selectedContext !== currentContext || reminderTime !== currentReminderTime || closureTime !== currentClosureTime
+  const canSubmit = hasChanges && selectedContext.length > 0 && reminderTime.length > 0 && closureTime.length > 0
 
   const handleSave = async () => {
     setSubmitError(null)
     setIsSubmitting(true)
     try {
-      await onSave(selectedContext)
+      await onSave({ retailContext: selectedContext, reminderTime, closureTime })
       setCurrentContext(selectedContext)
+      setCurrentReminderTime(reminderTime)
+      setCurrentClosureTime(closureTime)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "No se pudo guardar la configuración")
     } finally {
@@ -122,17 +133,45 @@ export const AdminConfigurationSection: React.FC<AdminConfigurationSectionProps>
                 </Button>
               ))}
             </div>
-
-            <div className="mt-2 flex justify-end">
-              <Button
-                onClick={() => { void handleSave() }}
-                disabled={isSubmitting || !canSubmit}
-              >
-                {isSubmitting ? "Guardando..." : "Guardar cambios"}
-              </Button>
-            </div>
           </div>
         )}
+
+        <div className="mt-4 grid gap-2 md:max-w-xs">
+          <label className="text-sm font-medium">Hora de recordatorio de corte</label>
+          <input
+            type="time"
+            value={reminderTime}
+            onChange={(event) => setReminderTime(event.target.value)}
+            disabled={isSubmitting}
+            className="h-10 rounded-md border bg-background px-3"
+          />
+          <p className="text-xs text-muted-foreground">
+            Se mostrará una notificación global en todo el sistema cuando llegue esta hora.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-2 md:max-w-xs">
+          <label className="text-sm font-medium">Hora de corte para auditoría</label>
+          <input
+            type="time"
+            value={closureTime}
+            onChange={(event) => setClosureTime(event.target.value)}
+            disabled={isSubmitting}
+            className="h-10 rounded-md border bg-background px-3"
+          />
+          <p className="text-xs text-muted-foreground">
+            Cuando se cierre después de esta hora, el sistema lo marcará como corte atrasado en notes.
+          </p>
+        </div>
+
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={() => { void handleSave() }}
+            disabled={isSubmitting || !canSubmit}
+          >
+            {isSubmitting ? "Guardando..." : "Guardar cambios"}
+          </Button>
+        </div>
 
         {submitError && (
           <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

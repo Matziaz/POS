@@ -36,7 +36,10 @@ export class PrismaSaleRepository implements SaleRepository {
 
     if (preferredId) {
       const register = await dbAny.cash_register.findUnique({ where: { id: preferredId } });
-      if (register) return register.id;
+      if (register?.status === "open") return register.id;
+      if (register) {
+        throw new Error("La caja seleccionada no esta abierta. Abre caja para continuar.");
+      }
     }
 
     const openRegister = await dbAny.cash_register.findFirst({
@@ -44,13 +47,7 @@ export class PrismaSaleRepository implements SaleRepository {
       orderBy: { opened_at: "desc" as any },
     });
     if (openRegister) return openRegister.id;
-
-    const anyRegister = await dbAny.cash_register.findFirst({
-      orderBy: { opened_at: "desc" as any },
-    });
-    if (anyRegister) return anyRegister.id;
-
-    throw new Error("No cash register found. Create an open cash register before saving sales.");
+    throw new Error("No hay una caja abierta. Abre caja antes de registrar una venta.");
   }
 
   private normalizeRange(from: Date, to: Date): { fromISO: string; toISO: string } {
