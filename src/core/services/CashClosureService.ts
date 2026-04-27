@@ -3,6 +3,7 @@ import type {
   CashClosurePaymentBreakdownRepository,
   CashClosureRepository,
   CashRegisterRepository,
+  PaymentMethodRepository,
   SalePaymentRepository,
   SaleRepository,
 } from "../repositories";
@@ -20,6 +21,28 @@ export interface CloseCashClosureInput {
 export interface CloseCashClosureResult {
   closure: CashClosure;
   breakdown: CashClosurePaymentBreakdown[];
+  summary: CashClosureSummary;
+}
+
+export interface CashClosurePaymentSummary {
+  paymentMethodId: string;
+  paymentMethodName: string;
+  isCash: number;
+  paymentCount: number;
+  totalAmount: number;
+}
+
+export interface CashClosureSummary {
+  hasSales: boolean;
+  noSalesMessage: string | null;
+  salesCount: number;
+  totalSalesAmount: number;
+  grossCashAmount: number;
+  changeReturned: number;
+  netCashSales: number;
+  openingAmount: number;
+  totalInDrawer: number;
+  paymentSummary: CashClosurePaymentSummary[];
 }
 
 function toISOOrNow(value?: string): string {
@@ -42,6 +65,7 @@ export class CashClosureService {
     private readonly cashClosureRepository: CashClosureRepository,
     private readonly breakdownRepository: CashClosurePaymentBreakdownRepository,
     private readonly cashRegisterRepository: CashRegisterRepository,
+    private readonly paymentMethodRepository: PaymentMethodRepository,
   ) {}
 
   async closeDaily(input: CloseCashClosureInput = {}): Promise<CloseCashClosureResult> {
@@ -67,13 +91,37 @@ export class CashClosureService {
     const salesCount = salesInRegister.length;
     const totalAmount = salesInRegister.reduce((sum, sale) => sum + sale.total, 0);
 
+    const paymentMethods = await this.paymentMethodRepository.list();
+    const paymentMethodById = new Map(
+      paymentMethods.map((method) => [
+        method.id,
+        { paymentMethodName: method.method, isCash: method.isCash },
+      ]),
+    );
+
     const totalsByMethod = new Map<string, number>();
+    const paymentsCountByMethod = new Map<string, number>();
+    let grossCashAmount = 0;
+    let changeReturned = 0;
+    let netCashSales = 0;
 
     for (const sale of salesInRegister) {
       const payments = await this.salePaymentRepository.listBySaleId(sale.id);
       for (const payment of payments) {
         const current = totalsByMethod.get(payment.paymentMethodId) ?? 0;
         totalsByMethod.set(payment.paymentMethodId, current + payment.amount);
+
+        const currentCount = paymentsCountByMethod.get(payment.paymentMethodId) ?? 0;
+        paymentsCountByMethod.set(payment.paymentMethodId, currentCount + 1);
+
+        const method = paymentMethodById.get(payment.paymentMethodId);
+        const isCashPayment = method?.isCash === 1 || payment.tendered !== null || payment.changeDue !== null;
+
+        if (isCashPayment) {
+          grossCashAmount += payment.tendered ?? payment.amount;
+          changeReturned += payment.changeDue ?? 0;
+          netCashSales += payment.amount;
+        }
       }
     }
 
@@ -104,6 +152,34 @@ export class CashClosureService {
       await this.breakdownRepository.save(row);
     }
 
+    const paymentSummary: CashClosurePaymentSummary[] = [...totalsByMethod.entries()]
+      .map(([paymentMethodId, total]) => {
+        const method = paymentMethodById.get(paymentMethodId);
+        return {
+          paymentMethodId,
+          paymentMethodName: method?.paymentMethodName ?? paymentMethodId,
+          isCash: method?.isCash ?? 0,
+          paymentCount: paymentsCountByMethod.get(paymentMethodId) ?? 0,
+          totalAmount: total,
+        };
+      })
+      .sort((left, right) => right.totalAmount - left.totalAmount);
+
+    const hasSales = salesCount > 0;
+    const totalInDrawer = openRegister.openingAmount + grossCashAmount - changeReturned;
+    const summary: CashClosureSummary = {
+      hasSales,
+      noSalesMessage: hasSales ? null : "No se registraron ventas en este corte.",
+      salesCount,
+      totalSalesAmount: totalAmount,
+      grossCashAmount,
+      changeReturned,
+      netCashSales,
+      openingAmount: openRegister.openingAmount,
+      totalInDrawer,
+      paymentSummary,
+    };
+
     const closedRegister = CashRegister.create({
       id: openRegister.id,
       openingAmount: openRegister.openingAmount,
@@ -113,6 +189,6 @@ export class CashClosureService {
     });
     await this.cashRegisterRepository.save(closedRegister);
 
-    return { closure, breakdown };
+    return { closure, breakdown, summary };
   }
 }
