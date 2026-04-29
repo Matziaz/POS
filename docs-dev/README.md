@@ -45,6 +45,7 @@ Documentacion de features completadas y cambios tecnicos (en carpeta `/features`
 - **APERTURA_CAJA_TERMINAL_VENTAS.md** — Apertura de caja en terminal
 - **PAGINACION_VENTAS.md** — Paginacion del historial de ventas
 - **FILTROS_VENTAS.md** — Filtros por fecha y hora en historial
+- **README_DESGLOSE_CORTE_CAJA_Y_CONSIDERACIONES_REFACTOR_VENTAS.md** — Desglose explicito de corte y consideraciones para refactor venta-corte
 
 ### Inventario
 - **CONTACTOS_INVENTARIO.md** — Gestion de contactos e inventario

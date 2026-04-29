@@ -71,6 +71,7 @@ const cashClosureService = new CashClosureService(
   cashClosureRepository,
   cashClosureBreakdownRepository,
   cashRegisterRepository,
+  paymentMethodRepository,
 );
 
 // ─── Tipos de datos planos que viajan por IPC ─────────────────────────────────
@@ -238,6 +239,33 @@ interface CashClosurePaymentBreakdownJSON {
   cashClosureId: string;
   paymentMethodId: string;
   totalAmount: number;
+}
+
+interface CashClosurePaymentSummaryJSON {
+  paymentMethodId: string;
+  paymentMethodName: string;
+  isCash: number;
+  paymentCount: number;
+  totalAmount: number;
+}
+
+interface CashClosureSummaryJSON {
+  hasSales: boolean;
+  noSalesMessage: string | null;
+  salesCount: number;
+  totalSalesAmount: number;
+  grossCashAmount: number;
+  changeReturned: number;
+  netCashSales: number;
+  openingAmount: number;
+  totalInDrawer: number;
+  paymentSummary: CashClosurePaymentSummaryJSON[];
+}
+
+interface CashClosureCloseResultJSON {
+  closure: CashClosureJSON;
+  breakdown: CashClosurePaymentBreakdownJSON[];
+  summary: CashClosureSummaryJSON;
 }
 
 interface CashClosureCloseJSON {
@@ -863,7 +891,8 @@ function registerCashClosureHandlers() {
       return {
         closure: result.closure.toJSON() as CashClosureJSON,
         breakdown: result.breakdown.map((item) => item.toJSON()) as CashClosurePaymentBreakdownJSON[],
-      };
+        summary: result.summary,
+      } as CashClosureCloseResultJSON;
     } catch (error) {
       throw new Error(toUserMessage(error));
     }

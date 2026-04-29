@@ -25,6 +25,27 @@ type CashClosureBreakdownView = {
   totalAmount: number
 }
 
+type CashClosurePaymentSummaryView = {
+  paymentMethodId: string
+  paymentMethodName: string
+  isCash: number
+  paymentCount: number
+  totalAmount: number
+}
+
+type CashClosureSummaryView = {
+  hasSales: boolean
+  noSalesMessage: string | null
+  salesCount: number
+  totalSalesAmount: number
+  grossCashAmount: number
+  changeReturned: number
+  netCashSales: number
+  openingAmount: number
+  totalInDrawer: number
+  paymentSummary: CashClosurePaymentSummaryView[]
+}
+
 type CashClosurePrecloseAlertView = {
   businessDate: string
   triggeredAt: string
@@ -79,6 +100,7 @@ export const CashClosurePage: React.FC = () => {
 
   const [closures, setClosures] = useState<CashClosureView[]>([])
   const [lastBreakdown, setLastBreakdown] = useState<CashClosureBreakdownView[]>([])
+  const [lastSummary, setLastSummary] = useState<CashClosureSummaryView | null>(null)
   const [precloseAlert, setPrecloseAlert] = useState<CashClosurePrecloseAlertView | null>(null)
 
   const loadHistory = async () => {
@@ -152,6 +174,7 @@ export const CashClosurePage: React.FC = () => {
       }
 
       setLastBreakdown(result.breakdown)
+      setLastSummary(result.summary)
       setSuccess(`Corte generado con folio ${result.closure.folio}`)
       setPrecloseAlert(null)
       setNotes("")
@@ -284,17 +307,77 @@ export const CashClosurePage: React.FC = () => {
           </Button>
         </div>
 
-        {lastBreakdown.length > 0 && (
+        {(lastSummary || lastBreakdown.length > 0) && (
           <div className="mt-4 rounded-md border p-3">
             <h3 className="mb-2 text-sm font-semibold">Desglose del último corte</h3>
-            <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-              {lastBreakdown.map((row) => (
-                <div key={row.id} className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
-                  <p className="font-medium uppercase">{row.paymentMethodId}</p>
-                  <p className="text-muted-foreground">{formatMoney(row.totalAmount)}</p>
+
+            {lastSummary && (
+              <>
+                {!lastSummary.hasSales && (
+                  <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    {lastSummary.noSalesMessage ?? "No se registraron ventas en este corte."}
+                  </div>
+                )}
+
+                <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Ventas registradas</p>
+                    <p className="text-base font-semibold">{lastSummary.salesCount}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Total vendido</p>
+                    <p className="text-base font-semibold">{formatMoney(lastSummary.totalSalesAmount)}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Dinero bruto (efectivo recibido)</p>
+                    <p className="text-base font-semibold">{formatMoney(lastSummary.grossCashAmount)}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Cambio devuelto</p>
+                    <p className="text-base font-semibold">{formatMoney(lastSummary.changeReturned)}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Efectivo neto en ventas</p>
+                    <p className="text-base font-semibold">{formatMoney(lastSummary.netCashSales)}</p>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="text-muted-foreground">Fondo inicial</p>
+                    <p className="text-base font-semibold">{formatMoney(lastSummary.openingAmount)}</p>
+                  </div>
+                  <div className="rounded-md border bg-emerald-100/70 px-3 py-2 text-sm sm:col-span-2">
+                    <p className="text-emerald-700">Dinero total en caja</p>
+                    <p className="text-base font-bold text-emerald-800">{formatMoney(lastSummary.totalInDrawer)}</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <h4 className="mb-2 text-sm font-semibold">Métodos de pago utilizados</h4>
+
+                {lastSummary.paymentSummary.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin métodos de pago registrados en este corte.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                    {lastSummary.paymentSummary.map((row) => (
+                      <div key={row.paymentMethodId} className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                        <p className="font-medium">{row.paymentMethodName}</p>
+                        <p className="text-muted-foreground">{formatMoney(row.totalAmount)} · {row.paymentCount} cobro(s)</p>
+                        <p className="text-xs text-muted-foreground">{row.isCash === 1 ? "Efectivo" : "No efectivo"}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {!lastSummary && lastBreakdown.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                {lastBreakdown.map((row) => (
+                  <div key={row.id} className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <p className="font-medium uppercase">{row.paymentMethodId}</p>
+                    <p className="text-muted-foreground">{formatMoney(row.totalAmount)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>

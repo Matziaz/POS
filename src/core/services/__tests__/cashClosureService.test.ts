@@ -4,6 +4,7 @@ import {
   CashClosure,
   CashClosurePaymentBreakdown,
   CashRegister,
+  PaymentMethod,
   Sale,
   SalePayment,
   SaleItem,
@@ -13,6 +14,7 @@ import type {
   CashClosurePaymentBreakdownRepository,
   CashClosureRepository,
   CashRegisterRepository,
+  PaymentMethodRepository,
   SalePaymentRepository,
   SaleRepository,
 } from "../../repositories"
@@ -114,6 +116,25 @@ function inMemoryBreakdownRepo(): CashClosurePaymentBreakdownRepository {
   }
 }
 
+function inMemoryPaymentMethodRepo(seed: PaymentMethod[]): PaymentMethodRepository {
+  const byId = new Map(seed.map((row) => [row.id, row]))
+
+  return {
+    async save(method) {
+      byId.set(method.id, method)
+    },
+    async findById(id) {
+      return byId.get(id) ?? null
+    },
+    async list() {
+      return [...byId.values()]
+    },
+    async listActive() {
+      return [...byId.values()].filter((row) => row.isActive === 1)
+    },
+  }
+}
+
 describe("CashClosureService", () => {
   it("generates closure with folio and payment breakdown and closes register", async () => {
     const openRegister = CashRegister.create({
@@ -174,6 +195,10 @@ describe("CashClosureService", () => {
     ]
 
     const registerRepo = inMemoryCashRegisterRepo([openRegister])
+    const paymentMethodRepo = inMemoryPaymentMethodRepo([
+      PaymentMethod.create({ id: "cash", method: "Efectivo", isCash: 1, isActive: 1 }),
+      PaymentMethod.create({ id: "card", method: "Tarjeta", isCash: 0, isActive: 1 }),
+    ])
 
     const service = new CashClosureService(
       inMemorySaleRepo([sale1, sale2]),
@@ -181,6 +206,7 @@ describe("CashClosureService", () => {
       inMemoryCashClosureRepo(),
       inMemoryBreakdownRepo(),
       registerRepo,
+      paymentMethodRepo,
     )
 
     const result = await service.closeDaily({
@@ -199,6 +225,13 @@ describe("CashClosureService", () => {
     expect(byMethod.get("cash")).toBeCloseTo(100)
     expect(byMethod.get("card")).toBeCloseTo(70)
 
+    expect(result.summary.hasSales).toBe(true)
+    expect(result.summary.totalSalesAmount).toBeCloseTo(170)
+    expect(result.summary.grossCashAmount).toBeCloseTo(120)
+    expect(result.summary.changeReturned).toBeCloseTo(20)
+    expect(result.summary.totalInDrawer).toBeCloseTo(400)
+    expect(result.summary.paymentSummary[0]?.paymentMethodName).toBe("Efectivo")
+
     const closed = await registerRepo.findById(openRegister.id)
     expect(closed?.status).toBe("closed")
   })
@@ -210,6 +243,7 @@ describe("CashClosureService", () => {
       inMemoryCashClosureRepo(),
       inMemoryBreakdownRepo(),
       inMemoryCashRegisterRepo([]),
+      inMemoryPaymentMethodRepo([]),
     )
 
     await expect(service.closeDaily()).rejects.toBeInstanceOf(ValidationError)
@@ -230,6 +264,7 @@ describe("CashClosureService", () => {
       inMemoryCashClosureRepo(),
       inMemoryBreakdownRepo(),
       inMemoryCashRegisterRepo([openRegister]),
+      inMemoryPaymentMethodRepo([]),
     )
 
     const result = await service.closeDaily({
@@ -239,5 +274,8 @@ describe("CashClosureService", () => {
     })
 
     expect(result.closure.userId).toBe("user_cashier_002")
+    expect(result.summary.hasSales).toBe(false)
+    expect(result.summary.noSalesMessage).toBe("No se registraron ventas en este corte.")
+    expect(result.summary.totalInDrawer).toBeCloseTo(100)
   })
 })

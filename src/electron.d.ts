@@ -196,6 +196,28 @@ interface CashClosureCloseJSON {
 interface CashClosureCloseResultJSON {
   closure: CashClosureJSON
   breakdown: CashClosurePaymentBreakdownJSON[]
+  summary: CashClosureSummaryJSON
+}
+
+interface CashClosurePaymentSummaryJSON {
+  paymentMethodId: string
+  paymentMethodName: string
+  isCash: number
+  paymentCount: number
+  totalAmount: number
+}
+
+interface CashClosureSummaryJSON {
+  hasSales: boolean
+  noSalesMessage: string | null
+  salesCount: number
+  totalSalesAmount: number
+  grossCashAmount: number
+  changeReturned: number
+  netCashSales: number
+  openingAmount: number
+  totalInDrawer: number
+  paymentSummary: CashClosurePaymentSummaryJSON[]
 }
 
 interface CashClosureReminderConfigJSON {
